@@ -206,8 +206,8 @@ h1 {
 
 .pond-unified-top {
   display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
+  grid-template-columns: auto minmax(180px, 1fr) minmax(320px, 460px);
+  align-items: start;
   gap: 0.55rem;
 }
 
@@ -226,10 +226,19 @@ h1 {
   font-size: 1.05rem;
 }
 
+.pond-world-summary {
+  min-width: 0;
+}
+
+.pond-donate {
+  justify-self: end;
+  width: 100%;
+}
+
 .donation-banner {
   display: block;
-  margin-top: 0.25rem;
-  max-width: 360px;
+  margin-top: 0;
+  max-width: 460px;
 }
 
 .donation-banner img {
@@ -982,6 +991,10 @@ time {
   .pond-unified-top {
     display: flex;
     gap: 0.4rem;
+  }
+
+  .pond-donate {
+    justify-self: auto;
   }
 
   .pond-toolbar-grid,
