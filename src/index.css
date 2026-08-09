@@ -226,10 +226,24 @@ h1 {
   font-size: 1.05rem;
 }
 
+.donation-banner {
+  display: block;
+  margin-top: 0.25rem;
+  max-width: 360px;
+}
+
+.donation-banner img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, white);
+}
+
 .donation-link {
   display: inline-flex;
   align-items: center;
-  margin-top: 0.2rem;
+  margin-top: 0.4rem;
   color: var(--accent);
   font-weight: 600;
   text-decoration: none;

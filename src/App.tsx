@@ -1496,6 +1496,14 @@ function App() {
                 <h2>{activeWorld.title}</h2>
                 <p className="meta">Residents: {pondDucks.length} | In view: {visiblePondDucks.length} | Total: {ducks.length}</p>
                 <a
+                  className="donation-banner"
+                  href="https://buy.stripe.com/14AcN6bWU9YY0Nw1vH3sI00"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <img src="/support-banner.png" alt="Support Aaron's creative projects" />
+                </a>
+                <a
                   className="donation-link"
                   href="https://buy.stripe.com/14AcN6bWU9YY0Nw1vH3sI00"
                   target="_blank"
