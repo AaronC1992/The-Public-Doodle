@@ -19,7 +19,7 @@ type Stroke = {
   closed?: boolean
 }
 
-type ToolMode = 'pencil' | 'fill'
+type ToolMode = 'pencil' | 'fill' | 'eraser'
 
 function isPoint(value: unknown): value is Point {
   if (!value || typeof value !== 'object') return false
@@ -1117,6 +1117,65 @@ function App() {
     })
   }
 
+  const eraseAtPoint = (point: Point) => {
+    const radius = Math.max(3, brushSize * 1.1)
+    const radiusSquared = radius * radius
+
+    setActiveFrameArt((current) => {
+      const next: Stroke[] = []
+
+      for (const stroke of current) {
+        const isClosed = Boolean(stroke.closed || stroke.fill)
+
+        if (isClosed) {
+          const touched = stroke.points.some((entry) => {
+            const dx = entry.x - point.x
+            const dy = entry.y - point.y
+            return dx * dx + dy * dy <= radiusSquared
+          })
+
+          if (!touched) {
+            next.push(stroke)
+          }
+          continue
+        }
+
+        const segments: Point[][] = []
+        let activeSegment: Point[] = []
+
+        for (const entry of stroke.points) {
+          const dx = entry.x - point.x
+          const dy = entry.y - point.y
+          const touched = dx * dx + dy * dy <= radiusSquared
+
+          if (touched) {
+            if (activeSegment.length >= 2) {
+              segments.push(activeSegment)
+            }
+            activeSegment = []
+          } else {
+            activeSegment.push(entry)
+          }
+        }
+
+        if (activeSegment.length >= 2) {
+          segments.push(activeSegment)
+        }
+
+        if (segments.length === 0) continue
+
+        for (const segment of segments) {
+          next.push({
+            ...stroke,
+            points: segment,
+          })
+        }
+      }
+
+      return next
+    })
+  }
+
   const interpolatePoints = (from: Point, to: Point) => {
     const dx = to.x - from.x
     const dy = to.y - from.y
@@ -1172,6 +1231,14 @@ function App() {
       return
     }
 
+    if (tool === 'eraser') {
+      setIsDrawing(true)
+      eraseAtPoint(point)
+      setRedoArt([])
+      rainbowLastPointRef.current = null
+      return
+    }
+
     setIsDrawing(true)
     if (rainbowPencil) {
       rainbowLastPointRef.current = point
@@ -1186,6 +1253,11 @@ function App() {
     const point = getDrawPoint(event)
     if (!point) {
       stopStroke(event)
+      return
+    }
+
+    if (tool === 'eraser') {
+      eraseAtPoint(point)
       return
     }
 
@@ -1731,6 +1803,13 @@ function App() {
               >
                 Fill Bucket
               </button>
+              <button
+                type="button"
+                className={tool === 'eraser' ? 'active' : ''}
+                onClick={() => setTool('eraser')}
+              >
+                Eraser
+              </button>
             </div>
           </section>
 
@@ -1830,7 +1909,7 @@ function App() {
                   />
                 </label>
                 <label>
-                  Brush Size: {brushSize}
+                  {tool === 'eraser' ? 'Eraser Size' : 'Brush Size'}: {brushSize}
                   <input
                     type="range"
                     min={1}
