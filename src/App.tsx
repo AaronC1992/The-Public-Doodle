@@ -1463,39 +1463,98 @@ function App() {
       ) : screen === 'pond' ? (
         <>
           <section className="pond-unified-toolbar card">
-            <div className="pond-unified-top">
-              <div className="pond-top-left">
-                <div className="view-switch pond-inline-switch">
-                  <button
-                    type="button"
-                    onClick={() => setScreen('home')}
-                  >
-                    Worlds
-                  </button>
-                  <button
-                    type="button"
-                    className="active"
-                    onClick={() => setScreen('pond')}
-                  >
-                    Visit World
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setScreen('gallery')}
-                  >
-                    Gallery
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setScreen('draw')}
-                  >
-                    {activeWorld.drawLabel}
-                  </button>
+            <div className="pond-toolbar-main">
+              <div className="pond-toolbar-left">
+                <div className="pond-unified-top">
+                  <div className="pond-top-left">
+                    <div className="view-switch pond-inline-switch">
+                      <button
+                        type="button"
+                        onClick={() => setScreen('home')}
+                      >
+                        Worlds
+                      </button>
+                      <button
+                        type="button"
+                        className="active"
+                        onClick={() => setScreen('pond')}
+                      >
+                        Visit World
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setScreen('gallery')}
+                      >
+                        Gallery
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setScreen('draw')}
+                      >
+                        {activeWorld.drawLabel}
+                      </button>
+                    </div>
+
+                    <div className="pond-world-summary">
+                      <h2>{activeWorld.title}</h2>
+                      <p className="meta">Residents: {pondDucks.length} | In view: {visiblePondDucks.length} | Total: {ducks.length}</p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="pond-world-summary">
-                  <h2>{activeWorld.title}</h2>
-                  <p className="meta">Residents: {pondDucks.length} | In view: {visiblePondDucks.length} | Total: {ducks.length}</p>
+                <div className="pond-unified-controls">
+                  <div>
+                    <div className="view-modes pond-toolbar-modes">
+                      <button
+                        type="button"
+                        className={pondViewMode === 'popular' ? 'active' : ''}
+                        onClick={() => setPondViewMode('popular')}
+                      >
+                        Most Popular
+                      </button>
+                      <button
+                        type="button"
+                        className={pondViewMode === 'newest' ? 'active' : ''}
+                        onClick={() => setPondViewMode('newest')}
+                      >
+                        Newest
+                      </button>
+                      <button
+                        type="button"
+                        className={pondViewMode === 'random' ? 'active' : ''}
+                        onClick={() => {
+                          setPondViewMode('random')
+                          setRandomSeed(Math.random())
+                        }}
+                      >
+                        Random
+                      </button>
+                    </div>
+                  </div>
+
+                  <label>
+                    Residents in View: {maxDucksInView}
+                    <input
+                      type="range"
+                      min={6}
+                      max={160}
+                      step={1}
+                      value={maxDucksInView}
+                      onChange={(event) => setMaxDucksInView(Number(event.target.value))}
+                    />
+                  </label>
+
+                  <label>
+                    Character Size: {duckSizePx}px
+                    <input
+                      type="range"
+                      min={34}
+                      max={120}
+                      step={1}
+                      value={duckSizePx}
+                      onChange={(event) => setDuckSizePx(Number(event.target.value))}
+                    />
+                  </label>
                 </div>
               </div>
 
@@ -1517,62 +1576,6 @@ function App() {
                   Buy me a coffee
                 </a>
               </div>
-            </div>
-
-            <div className="pond-unified-controls">
-              <div>
-                <p className="meta strong">View</p>
-                <div className="view-modes pond-toolbar-modes">
-                  <button
-                    type="button"
-                    className={pondViewMode === 'popular' ? 'active' : ''}
-                    onClick={() => setPondViewMode('popular')}
-                  >
-                    Most Popular
-                  </button>
-                  <button
-                    type="button"
-                    className={pondViewMode === 'newest' ? 'active' : ''}
-                    onClick={() => setPondViewMode('newest')}
-                  >
-                    Newest
-                  </button>
-                  <button
-                    type="button"
-                    className={pondViewMode === 'random' ? 'active' : ''}
-                    onClick={() => {
-                      setPondViewMode('random')
-                      setRandomSeed(Math.random())
-                    }}
-                  >
-                    Random
-                  </button>
-                </div>
-              </div>
-
-              <label>
-                Residents in View: {maxDucksInView}
-                <input
-                  type="range"
-                  min={6}
-                  max={160}
-                  step={1}
-                  value={maxDucksInView}
-                  onChange={(event) => setMaxDucksInView(Number(event.target.value))}
-                />
-              </label>
-
-              <label>
-                Character Size: {duckSizePx}px
-                <input
-                  type="range"
-                  min={34}
-                  max={120}
-                  step={1}
-                  value={duckSizePx}
-                  onChange={(event) => setDuckSizePx(Number(event.target.value))}
-                />
-              </label>
             </div>
           </section>
 
