@@ -1492,9 +1492,12 @@ function App() {
                 </button>
               </div>
 
-              <div>
+              <div className="pond-world-summary">
                 <h2>{activeWorld.title}</h2>
                 <p className="meta">Residents: {pondDucks.length} | In view: {visiblePondDucks.length} | Total: {ducks.length}</p>
+              </div>
+
+              <div className="pond-donate">
                 <a
                   className="donation-banner"
                   href="https://buy.stripe.com/14AcN6bWU9YY0Nw1vH3sI00"
