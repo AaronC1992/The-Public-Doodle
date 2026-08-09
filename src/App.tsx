@@ -1508,6 +1508,8 @@ function App() {
       {screen === 'home' ? (
         <main className="world-select-layout card">
           <section className="world-select-head">
+            <h1>The Public Doodle</h1>
+            <p className="meta">A global doodle game where you can see drawings from people around the world and submit your own.</p>
             <h2>Choose a World</h2>
             <p className="meta">Each world uses the same tools with a different drawing theme.</p>
             <p className="meta">Community: {serverConnected ? 'Connected, drawings are shared' : 'Loading community drawings...'}</p>
