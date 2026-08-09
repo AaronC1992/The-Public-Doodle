@@ -1464,37 +1464,39 @@ function App() {
         <>
           <section className="pond-unified-toolbar card">
             <div className="pond-unified-top">
-              <div className="view-switch pond-inline-switch">
-                <button
-                  type="button"
-                  onClick={() => setScreen('home')}
-                >
-                  Worlds
-                </button>
-                <button
-                  type="button"
-                  className="active"
-                  onClick={() => setScreen('pond')}
-                >
-                  Visit World
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setScreen('gallery')}
-                >
-                  Gallery
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setScreen('draw')}
-                >
-                  {activeWorld.drawLabel}
-                </button>
-              </div>
+              <div className="pond-top-left">
+                <div className="view-switch pond-inline-switch">
+                  <button
+                    type="button"
+                    onClick={() => setScreen('home')}
+                  >
+                    Worlds
+                  </button>
+                  <button
+                    type="button"
+                    className="active"
+                    onClick={() => setScreen('pond')}
+                  >
+                    Visit World
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScreen('gallery')}
+                  >
+                    Gallery
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScreen('draw')}
+                  >
+                    {activeWorld.drawLabel}
+                  </button>
+                </div>
 
-              <div className="pond-world-summary">
-                <h2>{activeWorld.title}</h2>
-                <p className="meta">Residents: {pondDucks.length} | In view: {visiblePondDucks.length} | Total: {ducks.length}</p>
+                <div className="pond-world-summary">
+                  <h2>{activeWorld.title}</h2>
+                  <p className="meta">Residents: {pondDucks.length} | In view: {visiblePondDucks.length} | Total: {ducks.length}</p>
+                </div>
               </div>
 
               <div className="pond-donate">
