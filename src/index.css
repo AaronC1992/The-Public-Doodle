@@ -206,7 +206,7 @@ h1 {
 
 .pond-unified-top {
   display: grid;
-  grid-template-columns: auto minmax(180px, 1fr) minmax(320px, 460px);
+  grid-template-columns: auto minmax(180px, 1fr) minmax(180px, 240px);
   align-items: start;
   gap: 0.55rem;
 }
@@ -232,13 +232,13 @@ h1 {
 
 .pond-donate {
   justify-self: end;
-  width: 100%;
+  width: min(100%, 240px);
 }
 
 .donation-banner {
   display: block;
   margin-top: 0;
-  max-width: 460px;
+  max-width: 240px;
 }
 
 .donation-banner img {
