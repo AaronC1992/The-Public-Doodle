@@ -1034,6 +1034,52 @@ function App() {
   useEffect(() => {
     let cancelled = false
 
+    const uploadMissingLocalDrawings = async (serverRows: DrawingRow[]) => {
+      const serverIds = new Set(serverRows.map((row) => row.id))
+      const localStore = readPersistedStore()
+      const missingDucks: { worldId: WorldId; duck: Duck }[] = []
+
+      for (const worldId of WORLD_IDS) {
+        const localDucks = localStore.worlds[worldId].ducks
+        for (const duck of localDucks) {
+          if (duck.art.length === 0) continue
+          if (!serverIds.has(duck.id)) {
+            missingDucks.push({ worldId, duck })
+          }
+        }
+      }
+
+      // Avoid hammering inserts on each poll; recover a small batch per sync.
+      const batch = missingDucks.slice(0, 30)
+
+      for (const { worldId, duck } of batch) {
+        const fullPayload = {
+          id: duck.id,
+          world_id: worldId,
+          name: duck.name,
+          art: duck.art,
+          animation_frames: duck.animationFrames,
+          animation_fps: duck.animationFps,
+          likes_count: duck.clickCount,
+          sound: duck.sound,
+        }
+
+        const { error } = await supabase.from('drawings').insert(fullPayload)
+
+        if (!error) continue
+
+        const { sound: _unused, ...fallbackPayload } = fullPayload
+        const { error: fallbackError } = await supabase.from('drawings').insert(fallbackPayload)
+
+        if (fallbackError) {
+          const duplicate = fallbackError.code === '23505'
+          if (!duplicate) {
+            console.error('Recovery upload error:', fallbackError)
+          }
+        }
+      }
+    }
+
     const fetchDrawings = async () => {
       const { data, error } = await supabase
         .from('drawings')
@@ -1053,6 +1099,8 @@ function App() {
 
       setServerConnected(true)
       const rows = data as DrawingRow[]
+
+      await uploadMissingLocalDrawings(rows)
 
       const byWorld: Record<WorldId, Duck[]> = {
         duck: [],
