@@ -199,16 +199,16 @@ h1 {
 }
 
 .pond-unified-toolbar {
-  padding: 0.55rem;
+  padding: 0.38rem 0.45rem;
   display: grid;
-  gap: 0.45rem;
+  gap: 0.3rem;
 }
 
 .pond-unified-top {
   display: grid;
-  grid-template-columns: auto minmax(180px, 1fr) minmax(180px, 240px);
-  align-items: start;
-  gap: 0.55rem;
+  grid-template-columns: auto minmax(180px, 1fr) minmax(120px, 170px);
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .pond-inline-switch {
@@ -219,7 +219,8 @@ h1 {
 }
 
 .pond-inline-switch button {
-  min-height: 1.9rem;
+  min-height: 1.7rem;
+  padding: 0 0.62rem;
 }
 
 .pond-unified-top h2 {
@@ -230,31 +231,38 @@ h1 {
   min-width: 0;
 }
 
+.pond-world-summary .meta {
+  margin-top: 0.08rem;
+}
+
 .pond-donate {
   justify-self: end;
-  width: min(100%, 240px);
+  width: min(100%, 170px);
 }
 
 .donation-banner {
   display: block;
   margin-top: 0;
-  max-width: 240px;
+  max-width: 170px;
 }
 
 .donation-banner img {
   display: block;
   width: 100%;
+  max-height: 70px;
   height: auto;
-  border-radius: 0.7rem;
+  border-radius: 0.55rem;
   border: 1px solid color-mix(in srgb, var(--accent) 35%, white);
 }
 
 .donation-link {
   display: inline-flex;
   align-items: center;
-  margin-top: 0.4rem;
+  margin-top: 0.14rem;
   color: var(--accent);
   font-weight: 600;
+  font-size: 0.82rem;
+  line-height: 1;
   text-decoration: none;
 }
 
@@ -265,18 +273,24 @@ h1 {
 
 .pond-toolbar-modes {
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: 0.35rem;
+  margin-top: 0.24rem;
 }
 
 .pond-unified-controls {
   display: grid;
   grid-template-columns: minmax(220px, 1.05fr) minmax(210px, 1fr) minmax(210px, 1fr);
-  gap: 0.6rem;
+  gap: 0.42rem;
   align-items: end;
 }
 
 .pond-unified-controls label {
   margin-bottom: 0;
+  gap: 0.16rem;
+}
+
+.pond-unified-toolbar .view-modes button {
+  min-height: 1.72rem;
+  padding: 0 0.58rem;
 }
 
 .pond-main {
