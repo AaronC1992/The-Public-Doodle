@@ -7,6 +7,7 @@ create table if not exists drawings (
   animation_frames jsonb not null default '[]',
   animation_fps integer not null default 6,
   likes_count integer not null default 0,
+  sound text default 'default',
   created_at timestamptz not null default now()
 );
 

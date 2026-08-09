@@ -273,6 +273,36 @@ function rainbowColorFromHue(hue: number) {
   return `hsl(${Math.floor(hue) % 360} 90% 55%)`
 }
 
+type SoundOption = 'default' | 'duck' | 'animal' | 'bear' | 'laughing'
+
+const SOUND_LIST: { id: SoundOption; name: string; file: string }[] = [
+  { id: 'default', name: 'Default for World', file: '' },
+  { id: 'duck', name: 'Quacking Duck', file: '/sounds/duck.mp3' },
+  { id: 'animal', name: 'Silly Animal', file: '/sounds/animal.mp3' },
+  { id: 'bear', name: 'Bear Growl', file: '/sounds/bear.mp3' },
+  { id: 'laughing', name: 'Man Laughing', file: '/sounds/laughing.mp3' },
+]
+
+function getDefaultSoundForWorld(worldId: WorldId): string {
+  if (worldId === 'duck') return '/sounds/duck.mp3'
+  if (worldId === 'animal') return '/sounds/animal.mp3'
+  if (worldId === 'stickman') return '/sounds/laughing.mp3'
+  // random world: pick a random sound from the available list
+  const randomOptions = ['/sounds/duck.mp3', '/sounds/animal.mp3', '/sounds/bear.mp3', '/sounds/laughing.mp3']
+  return pickOne(randomOptions)
+}
+
+function resolveSoundFile(soundOption: string | undefined, worldId: WorldId): string {
+  if (!soundOption || soundOption === 'default') {
+    return getDefaultSoundForWorld(worldId)
+  }
+  const match = SOUND_LIST.find((s) => s.id === soundOption)
+  if (match && match.file) {
+    return match.file
+  }
+  return getDefaultSoundForWorld(worldId)
+}
+
 type Duck = {
   id: string
   name: string
@@ -292,6 +322,7 @@ type Duck = {
   animationFrames: Stroke[][]
   animationFps: number
   pondId: PondId
+  sound?: SoundOption
 }
 
 type PondViewMode = 'popular' | 'newest' | 'random'
@@ -479,6 +510,7 @@ function createDuck(input?: Partial<Duck>): Duck {
     animationFrames,
     animationFps: clamp(input?.animationFps ?? DEFAULT_ANIMATION_FPS, 1, 12),
     pondId: SINGLE_POND.id,
+    sound: input?.sound ?? 'default',
   }
 }
 
@@ -661,6 +693,7 @@ type DrawingRow = {
   animation_fps: number
   likes_count: number
   created_at: string
+  sound?: string
 }
 
 function rowToDuck(row: DrawingRow): Duck {
@@ -674,6 +707,7 @@ function rowToDuck(row: DrawingRow): Duck {
       : [],
     animationFps: row.animation_fps,
     clickCount: row.likes_count,
+    sound: (row.sound as SoundOption) ?? 'default',
   })
 }
 
@@ -707,6 +741,7 @@ function App() {
   const [redoArt, setRedoArt] = useState<Stroke[]>([])
   const [isDrawing, setIsDrawing] = useState(false)
   const [drawError, setDrawError] = useState('')
+  const [selectedSound, setSelectedSound] = useState<SoundOption>('default')
   const [tool, setTool] = useState<ToolMode>('pencil')
   const [brushColor, setBrushColor] = useState('#15323f')
   const [brushSize, setBrushSize] = useState(5)
@@ -907,6 +942,7 @@ function App() {
     setRedoArt([])
     setDrawError('')
     setNewName('')
+    setSelectedSound('default')
   }, [selectedWorldId])
 
   const activeWorld = WORLD_CONFIGS[selectedWorldId]
@@ -1042,7 +1078,18 @@ function App() {
     }
   }, [selectedWorldId])
 
+  const playDuckSound = (duck?: Duck) => {
+    const soundFile = resolveSoundFile(duck?.sound, selectedWorldId)
+    const audio = new Audio(soundFile)
+    audio.currentTime = 0
+    audio.play().catch((error) => {
+      console.error('Error playing sound:', error)
+    })
+  }
+
   const registerDuckClick = (duckId: string) => {
+    const clickedDuck = ducks.find((d) => d.id === duckId)
+    playDuckSound(clickedDuck)
     setSelectedDuckId(duckId)
     setDucks((current) =>
       current.map((entry) =>
@@ -1401,6 +1448,7 @@ function App() {
       art: cloneArt(savedFrames[0] ?? []),
       animationFrames: savedFrames,
       animationFps: draftAnimationFps,
+      sound: selectedSound,
     })
     setDucks((current) => [duck, ...current])
     setSelectedDuckId(duck.id)
@@ -1415,6 +1463,7 @@ function App() {
         animation_frames: duck.animationFrames,
         animation_fps: duck.animationFps,
         likes_count: 0,
+        sound: duck.sound,
       })
       .then(({ error }) => {
         if (error) {
@@ -1433,6 +1482,7 @@ function App() {
       ...current,
     ])
     setNewName('')
+    setSelectedSound('default')
     setDraftFrames([getStarterArtForWorld(selectedWorldId)])
     setActiveFrameIndex(0)
     setDraftAnimationFps(DEFAULT_ANIMATION_FPS)
@@ -1704,7 +1754,7 @@ function App() {
                       marginTop: `-${visualHalf}px`,
                     }}
                     onClick={() => registerDuckClick(duck.id)}
-                    title={`${duck.name} | ${duck.state}`}
+                    title={duck.name}
                   >
                     <svg
                       className="duck-art"
@@ -1733,12 +1783,6 @@ function App() {
                   </button>
                 </div>
                 <p className="duck-name">{selectedDuck.name}</p>
-                <p className="badge-line">
-                  <span>{SINGLE_POND.name}</span>
-                  <span>{selectedDuck.state}</span>
-                </p>
-
-                <p className="meta">Current state: {selectedDuck.state}</p>
                 <p className="meta">Clicks: {selectedDuck.clickCount}</p>
               </section>
             </div>
@@ -1984,6 +2028,26 @@ function App() {
                   onChange={(event) => setNewName(event.target.value)}
                   placeholder="Type a duck name"
                 />
+              </label>
+              <label>
+                Click Sound
+                <select
+                  value={selectedSound}
+                  onChange={(event) => {
+                    const val = event.target.value as SoundOption
+                    setSelectedSound(val)
+                    const soundFile = resolveSoundFile(val, selectedWorldId)
+                    const audio = new Audio(soundFile)
+                    audio.currentTime = 0
+                    audio.play().catch(() => {})
+                  }}
+                >
+                  {SOUND_LIST.map((sound) => (
+                    <option key={sound.id} value={sound.id}>
+                      {sound.name} {sound.id === 'default' ? `(${SOUND_LIST.find(s => s.file === getDefaultSoundForWorld(selectedWorldId))?.name || 'Default'})` : ''}
+                    </option>
+                  ))}
+                </select>
               </label>
               <div className="button-row draw-actions">
                 <button type="button" onClick={addDuck}>
