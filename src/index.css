@@ -201,13 +201,13 @@ h1 {
 .pond-unified-toolbar {
   padding: 0.38rem 0.45rem;
   display: grid;
-  gap: 0.3rem;
+  gap: 0.16rem;
 }
 
 .pond-unified-top {
   display: grid;
   grid-template-columns: auto minmax(180px, 1fr) minmax(120px, 170px);
-  align-items: center;
+  align-items: end;
   gap: 0.4rem;
 }
 
@@ -229,6 +229,7 @@ h1 {
 
 .pond-world-summary {
   min-width: 0;
+  align-self: end;
 }
 
 .pond-world-summary .meta {
@@ -238,6 +239,7 @@ h1 {
 .pond-donate {
   justify-self: end;
   width: min(100%, 170px);
+  align-self: start;
 }
 
 .donation-banner {
@@ -281,6 +283,7 @@ h1 {
   grid-template-columns: minmax(220px, 1.05fr) minmax(210px, 1fr) minmax(210px, 1fr);
   gap: 0.42rem;
   align-items: end;
+  margin-top: -0.04rem;
 }
 
 .pond-unified-controls label {
