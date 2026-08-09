@@ -502,8 +502,8 @@ function createDuck(input?: Partial<Duck>): Duck {
     social: input?.social ?? Math.floor(Math.random() * 30 + 55),
     speed: input?.speed ?? Number((Math.random() * 1.2 + 0.8).toFixed(2)),
     state: input?.state ?? 'idle',
-    x: input?.x ?? Math.random() * 100,
-    y: input?.y ?? Math.random() * 100,
+    x: clamp(input?.x ?? Math.random() * 80 + 10, 6, 94),
+    y: clamp(input?.y ?? Math.random() * 80 + 10, 6, 94),
     facing: input?.facing ?? 'right',
     clickCount: input?.clickCount ?? 0,
     art,
@@ -651,12 +651,21 @@ function getStarterArtForWorld(worldId: WorldId): Stroke[] {
 }
 
 function mergeDuckList(current: Duck[], incoming: Duck[]) {
-  const map = new Map(current.map((duck) => [duck.id, duck]))
+  const map = new Map(
+    current
+      .filter((duck) => duck.art.length > 0)
+      .map((duck) => [duck.id, { ...duck, x: clamp(duck.x, 6, 94), y: clamp(duck.y, 6, 94) }]),
+  )
 
   for (const next of incoming) {
+    if (next.art.length === 0) continue
     const existing = map.get(next.id)
     if (!existing) {
-      map.set(next.id, next)
+      map.set(next.id, {
+        ...next,
+        x: clamp(next.x, 6, 94),
+        y: clamp(next.y, 6, 94),
+      })
       continue
     }
     map.set(next.id, {
@@ -665,10 +674,12 @@ function mergeDuckList(current: Duck[], incoming: Duck[]) {
       clickCount: Math.max(existing.clickCount, next.clickCount),
       art: next.art.length > 0 ? next.art : existing.art,
       animationFrames: next.animationFrames.length > 0 ? next.animationFrames : existing.animationFrames,
+      x: clamp(existing.x, 6, 94),
+      y: clamp(existing.y, 6, 94),
     })
   }
 
-  return [...map.values()].sort((a, b) => b.createdAt - a.createdAt)
+  return [...map.values()].filter((d) => d.art.length > 0).sort((a, b) => b.createdAt - a.createdAt)
 }
 
 const INITIAL_PERSISTED_STORE = readPersistedStore()
@@ -825,8 +836,8 @@ function App() {
 
             const directionX = (Math.random() - 0.5) * (3 + duck.speed)
             const directionY = (Math.random() - 0.5) * (3 + duck.speed)
-            duck.x = clamp(duck.x + directionX, 2, 98)
-            duck.y = clamp(duck.y + directionY, 2, 98)
+            duck.x = clamp(duck.x + directionX, 6, 94)
+            duck.y = clamp(duck.y + directionY, 6, 94)
             if (Math.abs(directionX) > 0.05) {
               duck.facing = directionX < 0 ? 'left' : 'right'
             }
@@ -1052,7 +1063,10 @@ function App() {
 
       for (const row of rows) {
         if (WORLD_IDS.includes(row.world_id)) {
-          byWorld[row.world_id].push(rowToDuck(row))
+          const duck = rowToDuck(row)
+          if (duck.art.length > 0) {
+            byWorld[row.world_id].push(duck)
+          }
         }
       }
 
@@ -1088,7 +1102,7 @@ function App() {
           const row = payload.new as DrawingRow
           const duck = rowToDuck(row)
           const worldId = row.world_id
-          if (WORLD_IDS.includes(worldId)) {
+          if (WORLD_IDS.includes(worldId) && duck.art.length > 0) {
             setServerConnected(true)
             setWorldStates((current) => ({
               ...current,
@@ -1107,7 +1121,7 @@ function App() {
           const row = payload.new as DrawingRow
           const duck = rowToDuck(row)
           const worldId = row.world_id
-          if (WORLD_IDS.includes(worldId)) {
+          if (WORLD_IDS.includes(worldId) && duck.art.length > 0) {
             setServerConnected(true)
             setWorldStates((current) => ({
               ...current,
@@ -1489,8 +1503,8 @@ function App() {
 
     const duck = createDuck({
       name: clean.length > 0 ? clean : `${pickOne(NAME_BANK)} ${Math.floor(Math.random() * 90 + 10)}`,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
+      x: Math.random() * 80 + 10,
+      y: Math.random() * 80 + 10,
       art: cloneArt(savedFrames[0] ?? []),
       animationFrames: savedFrames,
       animationFps: draftAnimationFps,
