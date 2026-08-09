@@ -991,7 +991,15 @@ function App() {
         .order('created_at', { ascending: false })
         .limit(200)
 
-      if (cancelled || error || !data) return
+      if (cancelled) return
+
+      if (error) {
+        console.error('Supabase fetch error:', error)
+        setServerConnected(false)
+        return
+      }
+
+      if (!data) return
 
       setServerConnected(true)
       const incoming = (data as DrawingRow[]).map(rowToDuck)
@@ -1393,15 +1401,22 @@ function App() {
     setDucks((current) => [duck, ...current])
     setSelectedDuckId(duck.id)
 
-    void supabase.from('drawings').insert({
-      id: duck.id,
-      world_id: selectedWorldId,
-      name: duck.name,
-      art: duck.art,
-      animation_frames: duck.animationFrames,
-      animation_fps: duck.animationFps,
-      likes_count: 0,
-    })
+    void supabase
+      .from('drawings')
+      .insert({
+        id: duck.id,
+        world_id: selectedWorldId,
+        name: duck.name,
+        art: duck.art,
+        animation_frames: duck.animationFrames,
+        animation_fps: duck.animationFps,
+        likes_count: 0,
+      })
+      .then(({ error }) => {
+        if (error) {
+          console.error('Supabase insert error:', error)
+        }
+      })
 
     setTimeline((current) => [
       {
