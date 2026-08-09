@@ -424,6 +424,7 @@ const NAME_BANK = [
 ]
 
 const STORAGE_KEY = 'duck-pond-v2-state'
+const PENDING_DRAFT_KEY = 'duck-pond-v2-pending-draft'
 const MAX_DUCKS = 220
 const MAX_ANIMATION_FRAMES = 5
 const DEFAULT_ANIMATION_FPS = 6
@@ -513,6 +514,51 @@ function createDuck(input?: Partial<Duck>): Duck {
     pondId: SINGLE_POND.id,
     sound: input?.sound ?? 'default',
   }
+}
+
+type PendingDraft = {
+  worldId: WorldId
+  name: string
+  art: Stroke[][]
+  animationFps: number
+  sound: SoundOption
+}
+
+function getStarterDraftFrames(worldId: WorldId) {
+  return [getStarterArtForWorld(worldId)]
+}
+
+function isSameDraftFrames(left: Stroke[][], right: Stroke[][]) {
+  return JSON.stringify(left) === JSON.stringify(right)
+}
+
+function readPendingDraft(): PendingDraft | null {
+  try {
+    const raw = localStorage.getItem(PENDING_DRAFT_KEY)
+    if (!raw) return null
+
+    const parsed = JSON.parse(raw) as Partial<PendingDraft>
+    if (!WORLD_IDS.includes(parsed.worldId as WorldId)) return null
+
+    return {
+      worldId: parsed.worldId as WorldId,
+      name: typeof parsed.name === 'string' ? parsed.name : '',
+      art: Array.isArray(parsed.art) ? parsed.art.map((frame) => normalizeArt(frame)) : [],
+      animationFps:
+        typeof parsed.animationFps === 'number' ? parsed.animationFps : DEFAULT_ANIMATION_FPS,
+      sound: (parsed.sound as SoundOption) ?? 'default',
+    }
+  } catch {
+    return null
+  }
+}
+
+function writePendingDraft(draft: PendingDraft) {
+  localStorage.setItem(PENDING_DRAFT_KEY, JSON.stringify(draft))
+}
+
+function clearPendingDraft() {
+  localStorage.removeItem(PENDING_DRAFT_KEY)
 }
 
 type PersistedState = {
@@ -764,6 +810,7 @@ function App() {
   const activePointerIdRef = useRef<number | null>(null)
   const rainbowHueRef = useRef<number>(Math.random() * 360)
   const rainbowLastPointRef = useRef<Point | null>(null)
+  const pendingDraftUploadRef = useRef(false)
 
   const updateWorldState = (worldId: WorldId, updater: (state: PersistedState) => PersistedState) => {
     setWorldStates((current) => ({
@@ -804,6 +851,12 @@ function App() {
   }
 
   const draftArt = draftFrames[activeFrameIndex] ?? []
+  const starterDraftFrames = useMemo(() => getStarterDraftFrames(selectedWorldId), [selectedWorldId])
+  const pendingDraftPointCount = draftFrames.reduce(
+    (sum, frame) => sum + frame.length,
+    0,
+  )
+  const hasPendingDraft = pendingDraftPointCount > 0 && !isSameDraftFrames(draftFrames, starterDraftFrames)
 
   const setActiveFrameArt = (updater: (current: Stroke[]) => Stroke[]) => {
     setDraftFrames((current) =>
@@ -961,6 +1014,91 @@ function App() {
     setNewName('')
     setSelectedSound('default')
   }, [selectedWorldId])
+
+  useEffect(() => {
+    if (!hasPendingDraft) {
+      clearPendingDraft()
+      return
+    }
+
+    writePendingDraft({
+      worldId: selectedWorldId,
+      name: newName,
+      art: draftFrames.map((frame) => cloneArt(frame)),
+      animationFps: draftAnimationFps,
+      sound: selectedSound,
+    })
+  }, [draftAnimationFps, draftFrames, hasPendingDraft, newName, selectedSound, selectedWorldId])
+
+  useEffect(() => {
+    if (pendingDraftUploadRef.current) return
+    pendingDraftUploadRef.current = true
+
+    const pendingDraft = readPendingDraft()
+    if (!pendingDraft || pendingDraft.art.length === 0) return
+
+    const pendingWorldId = pendingDraft.worldId
+    const pendingFrames = pendingDraft.art
+    const pendingArt = pendingFrames[0] ?? []
+    const pendingName = pendingDraft.name.trim()
+    const pendingSound = pendingDraft.sound
+    const pendingFps = pendingDraft.animationFps
+
+    const uploadPendingDraft = async () => {
+      const duck = createDuck({
+        name: pendingName.length > 0 ? pendingName : `${pickOne(NAME_BANK)} ${Math.floor(Math.random() * 90 + 10)}`,
+        art: cloneArt(pendingArt),
+        animationFrames: pendingFrames,
+        animationFps: pendingFps,
+        sound: pendingSound,
+      })
+
+      const fullPayload = {
+        id: duck.id,
+        world_id: pendingWorldId,
+        name: duck.name,
+        art: duck.art,
+        animation_frames: duck.animationFrames,
+        animation_fps: duck.animationFps,
+        likes_count: 0,
+        sound: duck.sound,
+      }
+
+      const { error } = await supabase.from('drawings').insert(fullPayload)
+
+      if (error) {
+        console.warn('Pending draft insert with sound failed, retrying without sound column:', error)
+        const { sound: _unused, ...fallbackPayload } = fullPayload
+        const { error: fallbackError } = await supabase.from('drawings').insert(fallbackPayload)
+        if (fallbackError) {
+          console.error('Supabase pending draft insert error (fallback):', fallbackError)
+          return
+        }
+      }
+
+      setServerConnected(true)
+      setWorldStates((current) => ({
+        ...current,
+        [pendingWorldId]: {
+          ...current[pendingWorldId],
+          ducks: mergeDuckList(current[pendingWorldId].ducks, [duck]),
+          timeline: [
+            {
+              id: randomId(),
+              duckId: duck.id,
+              summary: `${duck.name} was auto saved to the pond`,
+              createdAt: Date.now(),
+              pondId: duck.pondId,
+            },
+            ...current[pendingWorldId].timeline,
+          ].slice(0, 120),
+        },
+      }))
+      clearPendingDraft()
+    }
+
+    void uploadPendingDraft()
+  }, [])
 
   const activeWorld = WORLD_CONFIGS[selectedWorldId]
   const galleryWorld = galleryWorldFilter === 'all' ? null : WORLD_CONFIGS[galleryWorldFilter]
@@ -1615,6 +1753,7 @@ function App() {
     }
 
     void saveDrawingToSupabase()
+    clearPendingDraft()
 
     setTimeline((current) => [
       {
