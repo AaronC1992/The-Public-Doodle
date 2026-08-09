@@ -226,6 +226,20 @@ h1 {
   font-size: 1.05rem;
 }
 
+.donation-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.2rem;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.donation-link:hover,
+.donation-link:focus-visible {
+  text-decoration: underline;
+}
+
 .pond-toolbar-modes {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 0.35rem;

@@ -1495,6 +1495,14 @@ function App() {
               <div>
                 <h2>{activeWorld.title}</h2>
                 <p className="meta">Residents: {pondDucks.length} | In view: {visiblePondDucks.length} | Total: {ducks.length}</p>
+                <a
+                  className="donation-link"
+                  href="https://buy.stripe.com/14AcN6bWU9YY0Nw1vH3sI00"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Buy me a coffee
+                </a>
               </div>
             </div>
 
