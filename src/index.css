@@ -802,8 +802,8 @@ button:hover {
 }
 
 .gallery-modes {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  min-width: 320px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-width: 440px;
   margin-top: 0;
 }
 
@@ -1313,8 +1313,13 @@ time {
   }
 
   .gallery-modes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     min-width: 0;
     width: 100%;
+  }
+
+  .gallery-modes select {
+    grid-column: 1 / -1;
   }
 
   .draw-tools {

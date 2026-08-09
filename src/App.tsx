@@ -5,6 +5,7 @@ type FactionId = 'pond'
 type PondId = FactionId
 type DuckState = 'idle' | 'swim' | 'forage' | 'rest' | 'socialize'
 type WorldId = 'duck' | 'stickman' | 'animal' | 'random'
+type GalleryWorldFilter = 'all' | WorldId
 
 type Point = {
   x: number
@@ -738,6 +739,7 @@ function App() {
   const [newName, setNewName] = useState('')
   const [screen, setScreen] = useState<ScreenMode>('home')
   const [galleryViewMode, setGalleryViewMode] = useState<PondViewMode>('newest')
+  const [galleryWorldFilter, setGalleryWorldFilter] = useState<GalleryWorldFilter>('all')
   const [pondViewMode, setPondViewMode] = useState<PondViewMode>('popular')
   const [maxDucksInView, setMaxDucksInView] = useState(48)
   const [duckSizePx, setDuckSizePx] = useState(56)
@@ -763,11 +765,15 @@ function App() {
   const rainbowHueRef = useRef<number>(Math.random() * 360)
   const rainbowLastPointRef = useRef<Point | null>(null)
 
-  const updateCurrentWorldState = (updater: (state: PersistedState) => PersistedState) => {
+  const updateWorldState = (worldId: WorldId, updater: (state: PersistedState) => PersistedState) => {
     setWorldStates((current) => ({
       ...current,
-      [selectedWorldId]: updater(current[selectedWorldId]),
+      [worldId]: updater(current[worldId]),
     }))
+  }
+
+  const updateCurrentWorldState = (updater: (state: PersistedState) => PersistedState) => {
+    updateWorldState(selectedWorldId, updater)
   }
 
   const setDucks = (next: React.SetStateAction<Duck[]>) => {
@@ -957,6 +963,7 @@ function App() {
   }, [selectedWorldId])
 
   const activeWorld = WORLD_CONFIGS[selectedWorldId]
+  const galleryWorld = galleryWorldFilter === 'all' ? null : WORLD_CONFIGS[galleryWorldFilter]
 
   const activePond: Faction = {
     id: SINGLE_POND.id,
@@ -1013,23 +1020,37 @@ function App() {
     return duck
   }, [ducks, selectedDuckId])
 
+  const galleryEntries = useMemo(() => {
+    if (galleryWorldFilter === 'all') {
+      return WORLD_IDS.flatMap((worldId) =>
+        worldStates[worldId].ducks.map((duck) => ({ worldId, duck })),
+      )
+    }
+
+    return worldStates[galleryWorldFilter].ducks.map((duck) => ({ worldId: galleryWorldFilter, duck }))
+  }, [galleryWorldFilter, worldStates])
+
   const galleryDucks = useMemo(() => {
+    const entries = [...galleryEntries]
+
     if (galleryViewMode === 'newest') {
-      return [...ducks].sort((a, b) => b.createdAt - a.createdAt)
+      return entries.sort((a, b) => b.duck.createdAt - a.duck.createdAt)
     }
 
     if (galleryViewMode === 'random') {
-      return [...ducks]
-        .map((duck) => ({
-          duck,
-          score: Math.sin(duck.createdAt * 0.001 + galleryRandomSeed * 1000 + duck.id.length),
+      return entries
+        .map((entry) => ({
+          entry,
+          score: Math.sin(entry.duck.createdAt * 0.001 + galleryRandomSeed * 1000 + entry.duck.id.length),
         }))
         .sort((a, b) => b.score - a.score)
-        .map((entry) => entry.duck)
+        .map((entry) => entry.entry)
     }
 
-    return [...ducks].sort((a, b) => b.clickCount - a.clickCount || b.createdAt - a.createdAt)
-  }, [ducks, galleryViewMode, galleryRandomSeed])
+    return entries.sort(
+      (a, b) => b.duck.clickCount - a.duck.clickCount || b.duck.createdAt - a.duck.createdAt,
+    )
+  }, [galleryEntries, galleryViewMode, galleryRandomSeed])
 
   useEffect(() => {
     let cancelled = false
@@ -1191,8 +1212,8 @@ function App() {
     }
   }, [])
 
-  const playDuckSound = (duck?: Duck) => {
-    const soundFile = resolveSoundFile(duck?.sound, selectedWorldId)
+  const playDuckSound = (duck?: Duck, worldId: WorldId = selectedWorldId) => {
+    const soundFile = resolveSoundFile(duck?.sound, worldId)
     const audio = new Audio(soundFile)
     audio.currentTime = 0
     audio.play().catch((error) => {
@@ -1200,17 +1221,22 @@ function App() {
     })
   }
 
-  const registerDuckClick = (duckId: string) => {
-    const clickedDuck = ducks.find((d) => d.id === duckId)
-    playDuckSound(clickedDuck)
-    setSelectedDuckId(duckId)
-    setDucks((current) =>
-      current.map((entry) =>
+  const registerDuckClick = (duckId: string, worldId: WorldId = selectedWorldId) => {
+    const clickedDuck = worldStates[worldId].ducks.find((d) => d.id === duckId)
+    playDuckSound(clickedDuck, worldId)
+
+    if (worldId === selectedWorldId) {
+      setSelectedDuckId(duckId)
+    }
+
+    updateWorldState(worldId, (state) => ({
+      ...state,
+      ducks: state.ducks.map((entry) =>
         entry.id === duckId
           ? { ...entry, clickCount: entry.clickCount + 1 }
           : entry,
       ),
-    )
+    }))
 
     void supabase
       .from('likes')
@@ -1912,10 +1938,25 @@ function App() {
         <main className="gallery-layout card">
           <section className="gallery-toolbar">
             <div>
-              <h2>{activeWorld.galleryLabel}</h2>
-              <p className="meta">Every {activeWorld.residentSingular.toLowerCase()} your world has created, all in one place.</p>
+              <h2>{galleryWorldFilter === 'all' ? 'All Worlds Gallery' : galleryWorld?.galleryLabel}</h2>
+              <p className="meta">
+                {galleryWorldFilter === 'all'
+                  ? 'Every drawing from every world in one place.'
+                  : `Every ${galleryWorld?.residentSingular.toLowerCase()} your world has created, all in one place.`}
+              </p>
             </div>
             <div className="view-modes gallery-modes">
+              <select
+                value={galleryWorldFilter}
+                onChange={(event) => setGalleryWorldFilter(event.target.value as GalleryWorldFilter)}
+                aria-label="Filter gallery by world"
+              >
+                <option value="all">All Worlds</option>
+                <option value="duck">Duck World</option>
+                <option value="stickman">Stickman World</option>
+                <option value="animal">Animal World</option>
+                <option value="random">Random World</option>
+              </select>
               <button
                 type="button"
                 className={galleryViewMode === 'newest' ? 'active' : ''}
@@ -1944,13 +1985,14 @@ function App() {
           </section>
 
           <section className="gallery-grid">
-            {galleryDucks.map((duck) => {
+            {galleryDucks.map(({ duck, worldId }) => {
+              const worldTitle = WORLD_CONFIGS[worldId].title
               return (
                 <button
                   key={duck.id}
                   type="button"
                   className="gallery-card"
-                  onClick={() => registerDuckClick(duck.id)}
+                  onClick={() => registerDuckClick(duck.id, worldId)}
                   title={`${duck.name} | clicks ${duck.clickCount}`}
                 >
                   <div className="gallery-art-wrap" style={{ borderColor: SINGLE_POND.color }}>
@@ -1959,6 +2001,7 @@ function App() {
                     </svg>
                   </div>
                   <p className="duck-name">{duck.name}</p>
+                  <p className="meta">{worldTitle}</p>
                   <p className="meta">Clicks: {duck.clickCount}</p>
                 </button>
               )
