@@ -1451,7 +1451,6 @@ function App() {
       sound: selectedSound,
     })
     setDucks((current) => [duck, ...current])
-    setSelectedDuckId(duck.id)
 
     void supabase
       .from('drawings')
