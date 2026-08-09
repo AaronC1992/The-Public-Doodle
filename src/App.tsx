@@ -751,14 +751,6 @@ function App() {
     }))
   }
 
-  const setTickCount = (next: React.SetStateAction<number>) => {
-    updateCurrentWorldState((state) => ({
-      ...state,
-      tickCount:
-        typeof next === 'function' ? (next as (value: number) => number)(state.tickCount) : next,
-    }))
-  }
-
   const draftArt = draftFrames[activeFrameIndex] ?? []
 
   const setActiveFrameArt = (updater: (current: Stroke[]) => Stroke[]) => {
@@ -772,96 +764,108 @@ function App() {
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setTickCount((value) => value + 1)
-      setDucks((currentDucks) => {
+      setWorldStates((currentWorldStates) => {
         const now = Date.now()
-        const updates: TimelineEvent[] = []
-        const next = currentDucks.map((duck) => ({ ...duck }))
+        const nextWorldStates = { ...currentWorldStates }
 
-        for (let i = 0; i < next.length; i += 1) {
-          const duck = next[i]
+        for (const worldId of WORLD_IDS) {
+          const worldState = currentWorldStates[worldId]
+          const currentDucks = worldState.ducks
+          if (currentDucks.length === 0) continue
 
-          const nearby = next.filter(
-            (other, idx) =>
-              idx !== i && Math.abs(other.x - duck.x) < 12 && Math.abs(other.y - duck.y) < 12,
-          )
+          const updates: TimelineEvent[] = []
+          const next = currentDucks.map((duck) => ({ ...duck }))
 
-          const weights = getStateWeights(duck, nearby.length)
-          const nextState = weightedState(weights)
-          duck.state = nextState
+          for (let i = 0; i < next.length; i += 1) {
+            const duck = next[i]
 
-          const directionX = (Math.random() - 0.5) * (3 + duck.speed)
-          const directionY = (Math.random() - 0.5) * (3 + duck.speed)
-          duck.x = clamp(duck.x + directionX, 2, 98)
-          duck.y = clamp(duck.y + directionY, 2, 98)
-          if (Math.abs(directionX) > 0.05) {
-            duck.facing = directionX < 0 ? 'left' : 'right'
+            const nearby = next.filter(
+              (other, idx) =>
+                idx !== i && Math.abs(other.x - duck.x) < 12 && Math.abs(other.y - duck.y) < 12,
+            )
+
+            const weights = getStateWeights(duck, nearby.length)
+            const nextState = weightedState(weights)
+            duck.state = nextState
+
+            const directionX = (Math.random() - 0.5) * (3 + duck.speed)
+            const directionY = (Math.random() - 0.5) * (3 + duck.speed)
+            duck.x = clamp(duck.x + directionX, 2, 98)
+            duck.y = clamp(duck.y + directionY, 2, 98)
+            if (Math.abs(directionX) > 0.05) {
+              duck.facing = directionX < 0 ? 'left' : 'right'
+            }
+
+            duck.mood = clamp(duck.mood + factionMoodDelta(duck) * 0.07, 0, 100)
+            duck.hunger = clamp(duck.hunger - 0.4, 0, 100)
+            duck.energy = clamp(duck.energy - 0.25, 0, 100)
+            duck.social = clamp(duck.social - 0.18, 0, 100)
+
+            if (nextState === 'forage') {
+              duck.hunger = clamp(duck.hunger + 10, 0, 100)
+              duck.energy = clamp(duck.energy - 2, 0, 100)
+            }
+            if (nextState === 'rest') {
+              duck.energy = clamp(duck.energy + 12, 0, 100)
+              duck.mood = clamp(duck.mood + 4, 0, 100)
+            }
+            if (nextState === 'socialize') {
+              duck.social = clamp(duck.social + 11, 0, 100)
+              duck.mood = clamp(duck.mood + 5, 0, 100)
+            }
+            if (nextState === 'swim') {
+              duck.energy = clamp(duck.energy - 1, 0, 100)
+              duck.mood = clamp(duck.mood + 2, 0, 100)
+            }
+            if (nextState === 'idle') {
+              duck.energy = clamp(duck.energy + 2, 0, 100)
+            }
+
+            if (nearby.length > 0 && Math.random() < 0.1) {
+              const partner = pickOne(nearby)
+              updates.unshift({
+                id: randomId(),
+                duckId: duck.id,
+                summary: `${duck.name} shared a splash chat with ${partner.name}`,
+                createdAt: now,
+                pondId: duck.pondId,
+              })
+            }
+
+            if (Math.random() < 0.04) {
+              const action =
+                nextState === 'forage'
+                  ? 'found a perfect crumb trail'
+                  : nextState === 'rest'
+                    ? 'claimed a sunny lily nap spot'
+                    : nextState === 'socialize'
+                      ? 'hosted a tiny duck parade'
+                      : nextState === 'swim'
+                        ? 'cut a clean arc through the water'
+                        : 'watched ripples and planned the next move'
+
+              updates.unshift({
+                id: randomId(),
+                duckId: duck.id,
+                summary: `${duck.name} ${action}`,
+                createdAt: now,
+                pondId: duck.pondId,
+              })
+            }
           }
 
-          duck.mood = clamp(duck.mood + factionMoodDelta(duck) * 0.07, 0, 100)
-          duck.hunger = clamp(duck.hunger - 0.4, 0, 100)
-          duck.energy = clamp(duck.energy - 0.25, 0, 100)
-          duck.social = clamp(duck.social - 0.18, 0, 100)
-
-          if (nextState === 'forage') {
-            duck.hunger = clamp(duck.hunger + 10, 0, 100)
-            duck.energy = clamp(duck.energy - 2, 0, 100)
+          nextWorldStates[worldId] = {
+            ...worldState,
+            tickCount: worldState.tickCount + 1,
+            ducks: next,
+            timeline:
+              updates.length > 0
+                ? [...updates, ...worldState.timeline].slice(0, 120)
+                : worldState.timeline,
           }
-          if (nextState === 'rest') {
-            duck.energy = clamp(duck.energy + 12, 0, 100)
-            duck.mood = clamp(duck.mood + 4, 0, 100)
-          }
-          if (nextState === 'socialize') {
-            duck.social = clamp(duck.social + 11, 0, 100)
-            duck.mood = clamp(duck.mood + 5, 0, 100)
-          }
-          if (nextState === 'swim') {
-            duck.energy = clamp(duck.energy - 1, 0, 100)
-            duck.mood = clamp(duck.mood + 2, 0, 100)
-          }
-          if (nextState === 'idle') {
-            duck.energy = clamp(duck.energy + 2, 0, 100)
-          }
-
-          if (nearby.length > 0 && Math.random() < 0.1) {
-            const partner = pickOne(nearby)
-            updates.unshift({
-              id: randomId(),
-              duckId: duck.id,
-              summary: `${duck.name} shared a splash chat with ${partner.name}`,
-              createdAt: now,
-              pondId: duck.pondId,
-            })
-          }
-
-          if (Math.random() < 0.04) {
-            const action =
-              nextState === 'forage'
-                ? 'found a perfect crumb trail'
-                : nextState === 'rest'
-                  ? 'claimed a sunny lily nap spot'
-                  : nextState === 'socialize'
-                    ? 'hosted a tiny duck parade'
-                    : nextState === 'swim'
-                      ? 'cut a clean arc through the water'
-                      : 'watched ripples and planned the next move'
-
-            updates.unshift({
-              id: randomId(),
-              duckId: duck.id,
-              summary: `${duck.name} ${action}`,
-              createdAt: now,
-              pondId: duck.pondId,
-            })
-          }
-
         }
 
-        if (updates.length > 0) {
-          setTimeline((currentTimeline) => [...updates, ...currentTimeline].slice(0, 120))
-        }
-
-        return next
+        return nextWorldStates
       })
     }, 1000)
 
