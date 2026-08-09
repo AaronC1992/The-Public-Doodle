@@ -11,6 +11,9 @@ create table if not exists drawings (
   created_at timestamptz not null default now()
 );
 
+-- Ensure sound column exists for existing deployments
+alter table drawings add column if not exists sound text default 'default';
+
 -- Likes table: one row per user key + drawing, prevents duplicate likes
 create table if not exists likes (
   id uuid primary key default gen_random_uuid(),

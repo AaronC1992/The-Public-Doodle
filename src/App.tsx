@@ -660,8 +660,8 @@ function mergeDuckList(current: Duck[], incoming: Duck[]) {
       continue
     }
     map.set(next.id, {
-      ...existing,
       ...next,
+      ...existing,
       clickCount: Math.max(existing.clickCount, next.clickCount),
       art: next.art.length > 0 ? next.art : existing.art,
       animationFrames: next.animationFrames.length > 0 ? next.animationFrames : existing.animationFrames,
@@ -1023,13 +1023,12 @@ function App() {
   useEffect(() => {
     let cancelled = false
 
-    const load = async () => {
+    const fetchDrawings = async () => {
       const { data, error } = await supabase
         .from('drawings')
         .select('*')
-        .eq('world_id', selectedWorldId)
         .order('created_at', { ascending: false })
-        .limit(200)
+        .limit(500)
 
       if (cancelled) return
 
@@ -1042,41 +1041,93 @@ function App() {
       if (!data) return
 
       setServerConnected(true)
-      const incoming = (data as DrawingRow[]).map(rowToDuck)
-      setWorldStates((current) => ({
-        ...current,
-        [selectedWorldId]: {
-          ...current[selectedWorldId],
-          ducks: mergeDuckList(current[selectedWorldId].ducks, incoming),
-        },
-      }))
+      const rows = data as DrawingRow[]
+
+      const byWorld: Record<WorldId, Duck[]> = {
+        duck: [],
+        stickman: [],
+        animal: [],
+        random: [],
+      }
+
+      for (const row of rows) {
+        if (WORLD_IDS.includes(row.world_id)) {
+          byWorld[row.world_id].push(rowToDuck(row))
+        }
+      }
+
+      setWorldStates((current) => {
+        const nextStates = { ...current }
+        for (const worldId of WORLD_IDS) {
+          nextStates[worldId] = {
+            ...current[worldId],
+            ducks: mergeDuckList(current[worldId].ducks, byWorld[worldId]),
+          }
+        }
+        return nextStates
+      })
     }
 
-    void load()
+    void fetchDrawings()
+
+    const pollInterval = window.setInterval(() => {
+      void fetchDrawings()
+    }, 15000)
+
+    const onFocus = () => {
+      void fetchDrawings()
+    }
+    window.addEventListener('focus', onFocus)
 
     const channel = supabase
-      .channel(`drawings:${selectedWorldId}`)
+      .channel('drawings-global')
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'drawings', filter: `world_id=eq.${selectedWorldId}` },
+        { event: 'INSERT', schema: 'public', table: 'drawings' },
         (payload) => {
-          const duck = rowToDuck(payload.new as DrawingRow)
-          setWorldStates((current) => ({
-            ...current,
-            [selectedWorldId]: {
-              ...current[selectedWorldId],
-              ducks: mergeDuckList(current[selectedWorldId].ducks, [duck]),
-            },
-          }))
+          const row = payload.new as DrawingRow
+          const duck = rowToDuck(row)
+          const worldId = row.world_id
+          if (WORLD_IDS.includes(worldId)) {
+            setServerConnected(true)
+            setWorldStates((current) => ({
+              ...current,
+              [worldId]: {
+                ...current[worldId],
+                ducks: mergeDuckList(current[worldId].ducks, [duck]),
+              },
+            }))
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'drawings' },
+        (payload) => {
+          const row = payload.new as DrawingRow
+          const duck = rowToDuck(row)
+          const worldId = row.world_id
+          if (WORLD_IDS.includes(worldId)) {
+            setServerConnected(true)
+            setWorldStates((current) => ({
+              ...current,
+              [worldId]: {
+                ...current[worldId],
+                ducks: mergeDuckList(current[worldId].ducks, [duck]),
+              },
+            }))
+          }
         },
       )
       .subscribe()
 
     return () => {
       cancelled = true
+      window.clearInterval(pollInterval)
+      window.removeEventListener('focus', onFocus)
       void supabase.removeChannel(channel)
     }
-  }, [selectedWorldId])
+  }, [])
 
   const playDuckSound = (duck?: Duck) => {
     const soundFile = resolveSoundFile(duck?.sound, selectedWorldId)
@@ -1103,14 +1154,9 @@ function App() {
       .from('likes')
       .insert({ drawing_id: duckId, user_key: USER_KEY })
       .then(({ error }) => {
-        if (error) return
-        setDucks((current) =>
-          current.map((entry) =>
-            entry.id === duckId
-              ? { ...entry, clickCount: entry.clickCount + 1 }
-              : entry,
-          ),
-        )
+        if (error) {
+          console.error('Like insert error:', error)
+        }
       })
   }
 
@@ -1452,9 +1498,8 @@ function App() {
     })
     setDucks((current) => [duck, ...current])
 
-    void supabase
-      .from('drawings')
-      .insert({
+    const saveDrawingToSupabase = async () => {
+      const fullPayload = {
         id: duck.id,
         world_id: selectedWorldId,
         name: duck.name,
@@ -1463,12 +1508,25 @@ function App() {
         animation_fps: duck.animationFps,
         likes_count: 0,
         sound: duck.sound,
-      })
-      .then(({ error }) => {
-        if (error) {
-          console.error('Supabase insert error:', error)
+      }
+
+      const { error } = await supabase.from('drawings').insert(fullPayload)
+
+      if (error) {
+        console.warn('Initial insert with sound failed, retrying without sound column:', error)
+        const { sound: _unused, ...fallbackPayload } = fullPayload
+        const { error: fallbackError } = await supabase.from('drawings').insert(fallbackPayload)
+        if (fallbackError) {
+          console.error('Supabase insert error (fallback):', fallbackError)
+        } else {
+          setServerConnected(true)
         }
-      })
+      } else {
+        setServerConnected(true)
+      }
+    }
+
+    void saveDrawingToSupabase()
 
     setTimeline((current) => [
       {
