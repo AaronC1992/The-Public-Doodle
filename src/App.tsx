@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { supabase } from './supabaseClient'
 
 type FactionId = 'pond'
 type PondId = FactionId
@@ -617,7 +618,64 @@ function getStarterArtForWorld(worldId: WorldId): Stroke[] {
   return []
 }
 
+function mergeDuckList(current: Duck[], incoming: Duck[]) {
+  const map = new Map(current.map((duck) => [duck.id, duck]))
+
+  for (const next of incoming) {
+    const existing = map.get(next.id)
+    if (!existing) {
+      map.set(next.id, next)
+      continue
+    }
+    map.set(next.id, {
+      ...existing,
+      ...next,
+      clickCount: Math.max(existing.clickCount, next.clickCount),
+      art: next.art.length > 0 ? next.art : existing.art,
+      animationFrames: next.animationFrames.length > 0 ? next.animationFrames : existing.animationFrames,
+    })
+  }
+
+  return [...map.values()].sort((a, b) => b.createdAt - a.createdAt)
+}
+
 const INITIAL_PERSISTED_STORE = readPersistedStore()
+
+// Anonymous user key persisted in localStorage so one user gets one like per drawing
+function getOrCreateUserKey(): string {
+  const stored = localStorage.getItem('tpd-user-key')
+  if (stored) return stored
+  const key = randomId() + randomId()
+  localStorage.setItem('tpd-user-key', key)
+  return key
+}
+
+const USER_KEY = getOrCreateUserKey()
+
+type DrawingRow = {
+  id: string
+  world_id: WorldId
+  name: string
+  art: unknown
+  animation_frames: unknown
+  animation_fps: number
+  likes_count: number
+  created_at: string
+}
+
+function rowToDuck(row: DrawingRow): Duck {
+  return createDuck({
+    id: row.id,
+    name: row.name,
+    createdAt: new Date(row.created_at).getTime(),
+    art: normalizeArt(row.art),
+    animationFrames: Array.isArray(row.animation_frames)
+      ? (row.animation_frames as unknown[]).map((frame) => normalizeArt(frame)).filter((f) => f.length > 0)
+      : [],
+    animationFps: row.animation_fps,
+    clickCount: row.likes_count,
+  })
+}
 
 function App() {
   const [worldStates, setWorldStates] = useState<Record<WorldId, PersistedState>>(
@@ -630,6 +688,7 @@ function App() {
   const currentWorldState = worldStates[selectedWorldId]
   const ducks = currentWorldState.ducks
   const selectedDuckId = currentWorldState.selectedDuckId
+  const [serverConnected, setServerConnected] = useState(false)
 
   const [newName, setNewName] = useState('')
   const [screen, setScreen] = useState<ScreenMode>('home')
@@ -921,18 +980,79 @@ function App() {
     return [...ducks].sort((a, b) => b.clickCount - a.clickCount || b.createdAt - a.createdAt)
   }, [ducks, galleryViewMode, galleryRandomSeed])
 
+  useEffect(() => {
+    let cancelled = false
+
+    const load = async () => {
+      const { data, error } = await supabase
+        .from('drawings')
+        .select('*')
+        .eq('world_id', selectedWorldId)
+        .order('created_at', { ascending: false })
+        .limit(200)
+
+      if (cancelled || error || !data) return
+
+      setServerConnected(true)
+      const incoming = (data as DrawingRow[]).map(rowToDuck)
+      setWorldStates((current) => ({
+        ...current,
+        [selectedWorldId]: {
+          ...current[selectedWorldId],
+          ducks: mergeDuckList(current[selectedWorldId].ducks, incoming),
+        },
+      }))
+    }
+
+    void load()
+
+    const channel = supabase
+      .channel(`drawings:${selectedWorldId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'drawings', filter: `world_id=eq.${selectedWorldId}` },
+        (payload) => {
+          const duck = rowToDuck(payload.new as DrawingRow)
+          setWorldStates((current) => ({
+            ...current,
+            [selectedWorldId]: {
+              ...current[selectedWorldId],
+              ducks: mergeDuckList(current[selectedWorldId].ducks, [duck]),
+            },
+          }))
+        },
+      )
+      .subscribe()
+
+    return () => {
+      cancelled = true
+      void supabase.removeChannel(channel)
+    }
+  }, [selectedWorldId])
+
   const registerDuckClick = (duckId: string) => {
     setSelectedDuckId(duckId)
     setDucks((current) =>
       current.map((entry) =>
         entry.id === duckId
-          ? {
-              ...entry,
-              clickCount: entry.clickCount + 1,
-            }
+          ? { ...entry, clickCount: entry.clickCount + 1 }
           : entry,
       ),
     )
+
+    void supabase
+      .from('likes')
+      .insert({ drawing_id: duckId, user_key: USER_KEY })
+      .then(({ error }) => {
+        if (error) return
+        setDucks((current) =>
+          current.map((entry) =>
+            entry.id === duckId
+              ? { ...entry, clickCount: entry.clickCount + 1 }
+              : entry,
+          ),
+        )
+      })
   }
 
   const previewFrameIndex = useMemo(() => {
@@ -1200,6 +1320,17 @@ function App() {
     })
     setDucks((current) => [duck, ...current])
     setSelectedDuckId(duck.id)
+
+    void supabase.from('drawings').insert({
+      id: duck.id,
+      world_id: selectedWorldId,
+      name: duck.name,
+      art: duck.art,
+      animation_frames: duck.animationFrames,
+      animation_fps: duck.animationFps,
+      likes_count: 0,
+    })
+
     setTimeline((current) => [
       {
         id: randomId(),
@@ -1244,7 +1375,7 @@ function App() {
       {showHeroHeader ? (
       <header className="hero-header">
         <div>
-          <p className="eyebrow">Living World Simulation</p>
+          <p className="eyebrow">The Public Doodle</p>
           <h1>{activeWorld.title}</h1>
           <p className="hero-copy">
             Build your flock.
@@ -1307,6 +1438,7 @@ function App() {
           <section className="world-select-head">
             <h2>Choose a World</h2>
             <p className="meta">Each world uses the same tools with a different drawing theme.</p>
+            <p className="meta">Community: {serverConnected ? 'Connected, drawings are shared' : 'Loading community drawings...'}</p>
           </section>
           <section className="world-grid">
             {WORLD_IDS.map((worldId) => {
