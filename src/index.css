@@ -1617,6 +1617,45 @@ time {
     gap: 0.32rem;
   }
 
+  .app-topnav {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 0.3rem 0.5rem;
+    padding: 0.4rem 0.65rem;
+  }
+
+  .app-topnav-left {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .app-topnav-right {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+  }
+
+  .app-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.28rem;
+  }
+
+  .app-nav button {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.76rem;
+  }
+
+  .draw-layout {
+    overflow: visible;
+  }
+
+  .draw-controls {
+    overflow-y: visible;
+  }
+
   .hero-header {
     grid-template-columns: 1fr;
     border-radius: 14px;
