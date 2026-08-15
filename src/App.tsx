@@ -5,7 +5,8 @@ type FactionId = 'pond'
 type PondId = FactionId
 type DuckState = 'idle' | 'swim' | 'forage' | 'rest' | 'socialize'
 type WorldId = 'duck' | 'stickman' | 'animal' | 'random'
-type GalleryWorldFilter = 'all' | WorldId
+// Single public world — all drawings are shown together regardless of original world_id
+const SINGLE_WORLD_ID: WorldId = 'duck'
 
 type Point = {
   x: number
@@ -133,111 +134,6 @@ const STARTER_DUCK_ART: Stroke[] = [
   },
 ]
 
-const STARTER_STICKMAN_ART: Stroke[] = [
-  {
-    color: '#1f2f3a',
-    fill: '#f2d0ab',
-    closed: true,
-    size: 1.2,
-    points: circlePoints(50, 20, 9, 40),
-  },
-  {
-    color: '#1f2f3a',
-    size: 4,
-    points: [
-      { x: 50, y: 30 },
-      { x: 50, y: 62 },
-    ],
-  },
-  {
-    color: '#1f2f3a',
-    size: 4,
-    points: [
-      { x: 34, y: 44 },
-      { x: 66, y: 44 },
-    ],
-  },
-  {
-    color: '#1f2f3a',
-    size: 4,
-    points: [
-      { x: 50, y: 62 },
-      { x: 36, y: 86 },
-    ],
-  },
-  {
-    color: '#1f2f3a',
-    size: 4,
-    points: [
-      { x: 50, y: 62 },
-      { x: 64, y: 86 },
-    ],
-  },
-]
-
-const STARTER_ANIMAL_ART: Stroke[] = [
-  {
-    color: '#6b4b2f',
-    fill: '#b78453',
-    closed: true,
-    size: 1.4,
-    points: ellipsePoints(50, 58, 30, 22, 52),
-  },
-  {
-    color: '#6b4b2f',
-    fill: '#c69360',
-    closed: true,
-    size: 1.4,
-    points: circlePoints(50, 33, 15, 44),
-  },
-  {
-    color: '#6b4b2f',
-    fill: '#b78453',
-    closed: true,
-    size: 1.2,
-    points: [
-      { x: 39, y: 21 },
-      { x: 33, y: 11 },
-      { x: 43, y: 16 },
-    ],
-  },
-  {
-    color: '#6b4b2f',
-    fill: '#b78453',
-    closed: true,
-    size: 1.2,
-    points: [
-      { x: 61, y: 21 },
-      { x: 67, y: 11 },
-      { x: 57, y: 16 },
-    ],
-  },
-  {
-    color: '#1d1d1d',
-    fill: '#1d1d1d',
-    closed: true,
-    size: 1,
-    points: circlePoints(44, 33, 2, 18),
-  },
-  {
-    color: '#1d1d1d',
-    fill: '#1d1d1d',
-    closed: true,
-    size: 1,
-    points: circlePoints(56, 33, 2, 18),
-  },
-  {
-    color: '#4d2f1f',
-    fill: '#4d2f1f',
-    closed: true,
-    size: 1,
-    points: [
-      { x: 50, y: 37 },
-      { x: 54, y: 42 },
-      { x: 46, y: 42 },
-    ],
-  },
-]
 
 function renderStroke(stroke: Stroke, key: string, widthScale = 1) {
   const points = stroke.points.map((point) => `${point.x},${point.y}`).join(' ')
@@ -353,52 +249,22 @@ type WorldConfig = {
   accentColor: string
 }
 
-const SINGLE_POND: Faction = { id: 'pond', name: 'Sunny Pond', color: '#78bfd8' }
+const SINGLE_POND: Faction = { id: 'pond', name: 'The Public Doodle', color: '#78bfd8' }
 
 const WORLD_IDS: WorldId[] = ['duck', 'stickman', 'animal', 'random']
 
-const WORLD_CONFIGS: Record<WorldId, WorldConfig> = {
-  duck: {
-    id: 'duck',
-    title: 'Duck World',
-    pondName: 'Sunny Pond',
-    residentSingular: 'Duck',
-    residentPlural: 'Ducks',
-    drawLabel: 'Draw a Duck',
-    galleryLabel: 'Duck Gallery',
-    accentColor: '#78bfd8',
-  },
-  stickman: {
-    id: 'stickman',
-    title: 'Stickman World',
-    pondName: 'Sketch Field',
-    residentSingular: 'Stickman',
-    residentPlural: 'Stickmen',
-    drawLabel: 'Draw a Stickman',
-    galleryLabel: 'Stickman Gallery',
-    accentColor: '#8fc3ea',
-  },
-  animal: {
-    id: 'animal',
-    title: 'Animal World',
-    pondName: 'Wild Meadow',
-    residentSingular: 'Animal',
-    residentPlural: 'Animals',
-    drawLabel: 'Draw an Animal',
-    galleryLabel: 'Animal Gallery',
-    accentColor: '#8bd8bf',
-  },
-  random: {
-    id: 'random',
-    title: 'Random World',
-    pondName: 'Mystery Basin',
-    residentSingular: 'Creature',
-    residentPlural: 'Creatures',
-    drawLabel: 'Draw Anything',
-    galleryLabel: 'Random Gallery',
-    accentColor: '#d6b47f',
-  },
+// All worlds consolidated into one "Public Doodle" experience
+const PUBLIC_DOODLE_CONFIG: WorldConfig = {
+  id: 'duck',
+  title: 'Public Doodle',
+  pondName: 'The Public Doodle',
+  residentSingular: 'Doodle',
+  residentPlural: 'Doodles',
+  drawLabel: 'Draw a Doodle',
+  galleryLabel: 'Doodle Gallery',
+  accentColor: '#78bfd8',
 }
+
 
 const NAME_BANK = [
   'Milo',
@@ -573,7 +439,7 @@ type PersistedStore = {
   worlds: Record<WorldId, PersistedState>
 }
 
-type ScreenMode = 'home' | 'pond' | 'gallery' | 'draw'
+type ScreenMode = 'pond' | 'gallery' | 'draw'
 
 function createEmptyWorldState(): PersistedState {
   return {
@@ -690,11 +556,9 @@ function readPersistedStore(): PersistedStore {
   }
 }
 
-function getStarterArtForWorld(worldId: WorldId): Stroke[] {
-  if (worldId === 'duck') return cloneArt(STARTER_DUCK_ART)
-  if (worldId === 'stickman') return cloneArt(STARTER_STICKMAN_ART)
-  if (worldId === 'animal') return cloneArt(STARTER_ANIMAL_ART)
-  return []
+function getStarterArtForWorld(_worldId: WorldId): Stroke[] {
+  // Always use the duck as the starting template for all worlds
+  return cloneArt(STARTER_DUCK_ART)
 }
 
 function mergeDuckList(current: Duck[], incoming: Duck[]) {
@@ -773,9 +637,8 @@ function App() {
   const [worldStates, setWorldStates] = useState<Record<WorldId, PersistedState>>(
     () => INITIAL_PERSISTED_STORE.worlds,
   )
-  const [selectedWorldId, setSelectedWorldId] = useState<WorldId>(
-    () => INITIAL_PERSISTED_STORE.selectedWorldId,
-  )
+  // Single world — always use SINGLE_WORLD_ID
+  const selectedWorldId: WorldId = SINGLE_WORLD_ID
 
   const currentWorldState = worldStates[selectedWorldId]
   const ducks = currentWorldState.ducks
@@ -783,9 +646,8 @@ function App() {
   const [serverConnected, setServerConnected] = useState(false)
 
   const [newName, setNewName] = useState('')
-  const [screen, setScreen] = useState<ScreenMode>('home')
+  const [screen, setScreen] = useState<ScreenMode>('pond')
   const [galleryViewMode, setGalleryViewMode] = useState<PondViewMode>('newest')
-  const [galleryWorldFilter, setGalleryWorldFilter] = useState<GalleryWorldFilter>('all')
   const [pondViewMode, setPondViewMode] = useState<PondViewMode>('popular')
   const [maxDucksInView, setMaxDucksInView] = useState(48)
   const [duckSizePx, setDuckSizePx] = useState(56)
@@ -997,23 +859,13 @@ function App() {
 
   useEffect(() => {
     const snapshot: PersistedStore = {
-      selectedWorldId,
+      selectedWorldId: SINGLE_WORLD_ID,
       worlds: worldStates,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
-  }, [selectedWorldId, worldStates])
+  }, [worldStates])
 
-  useEffect(() => {
-    setDraftFrames([getStarterArtForWorld(selectedWorldId)])
-    setActiveFrameIndex(0)
-    setDraftAnimationFps(DEFAULT_ANIMATION_FPS)
-    setPreviewPlaying(false)
-    setPreviewClock(0)
-    setRedoArt([])
-    setDrawError('')
-    setNewName('')
-    setSelectedSound('default')
-  }, [selectedWorldId])
+  // No need to reset draft when world changes — single world only
 
   useEffect(() => {
     if (!hasPendingDraft) {
@@ -1100,8 +952,7 @@ function App() {
     void uploadPendingDraft()
   }, [])
 
-  const activeWorld = WORLD_CONFIGS[selectedWorldId]
-  const galleryWorld = galleryWorldFilter === 'all' ? null : WORLD_CONFIGS[galleryWorldFilter]
+  const activeWorld = PUBLIC_DOODLE_CONFIG
 
   const activePond: Faction = {
     id: SINGLE_POND.id,
@@ -1109,21 +960,9 @@ function App() {
     color: activeWorld.accentColor,
   }
 
-  const pondThemeClass =
-    selectedWorldId === 'stickman'
-      ? 'pond-stickman'
-      : selectedWorldId === 'animal'
-        ? 'pond-animal'
-        : selectedWorldId === 'random'
-          ? 'pond-random'
-          : 'pond-single'
+  const pondThemeClass = 'pond-single'
 
   const pondDucks = ducks
-
-  const chooseWorld = (worldId: WorldId) => {
-    setSelectedWorldId(worldId)
-    setScreen('pond')
-  }
 
   const visiblePondDucks = useMemo(() => {
     const withPopularity = pondDucks.map((duck) => ({ duck, popularity: duck.clickCount }))
@@ -1158,18 +997,8 @@ function App() {
     return duck
   }, [ducks, selectedDuckId])
 
-  const galleryEntries = useMemo(() => {
-    if (galleryWorldFilter === 'all') {
-      return WORLD_IDS.flatMap((worldId) =>
-        worldStates[worldId].ducks.map((duck) => ({ worldId, duck })),
-      )
-    }
-
-    return worldStates[galleryWorldFilter].ducks.map((duck) => ({ worldId: galleryWorldFilter, duck }))
-  }, [galleryWorldFilter, worldStates])
-
   const galleryDucks = useMemo(() => {
-    const entries = [...galleryEntries]
+    const entries = ducks.map((duck) => ({ worldId: SINGLE_WORLD_ID as WorldId, duck }))
 
     if (galleryViewMode === 'newest') {
       return entries.sort((a, b) => b.duck.createdAt - a.duck.createdAt)
@@ -1188,7 +1017,7 @@ function App() {
     return entries.sort(
       (a, b) => b.duck.clickCount - a.duck.clickCount || b.duck.createdAt - a.duck.createdAt,
     )
-  }, [galleryEntries, galleryViewMode, galleryRandomSeed])
+  }, [ducks, galleryViewMode, galleryRandomSeed])
 
   useEffect(() => {
     let cancelled = false
@@ -1277,16 +1106,15 @@ function App() {
         }
       }
 
-      setWorldStates((current) => {
-        const nextStates = { ...current }
-        for (const worldId of WORLD_IDS) {
-          nextStates[worldId] = {
-            ...current[worldId],
-            ducks: mergeDuckList(current[worldId].ducks, byWorld[worldId]),
-          }
-        }
-        return nextStates
-      })
+      // Merge all world drawings into the single public doodle world
+      const allDucks = WORLD_IDS.flatMap((worldId) => byWorld[worldId])
+      setWorldStates((current) => ({
+        ...current,
+        [SINGLE_WORLD_ID]: {
+          ...current[SINGLE_WORLD_ID],
+          ducks: mergeDuckList(current[SINGLE_WORLD_ID].ducks, allDucks),
+        },
+      }))
     }
 
     void fetchDrawings()
@@ -1308,14 +1136,13 @@ function App() {
         (payload) => {
           const row = payload.new as DrawingRow
           const duck = rowToDuck(row)
-          const worldId = row.world_id
-          if (WORLD_IDS.includes(worldId) && duck.art.length > 0) {
+          if (WORLD_IDS.includes(row.world_id) && duck.art.length > 0) {
             setServerConnected(true)
             setWorldStates((current) => ({
               ...current,
-              [worldId]: {
-                ...current[worldId],
-                ducks: mergeDuckList(current[worldId].ducks, [duck]),
+              [SINGLE_WORLD_ID]: {
+                ...current[SINGLE_WORLD_ID],
+                ducks: mergeDuckList(current[SINGLE_WORLD_ID].ducks, [duck]),
               },
             }))
           }
@@ -1327,14 +1154,13 @@ function App() {
         (payload) => {
           const row = payload.new as DrawingRow
           const duck = rowToDuck(row)
-          const worldId = row.world_id
-          if (WORLD_IDS.includes(worldId) && duck.art.length > 0) {
+          if (WORLD_IDS.includes(row.world_id) && duck.art.length > 0) {
             setServerConnected(true)
             setWorldStates((current) => ({
               ...current,
-              [worldId]: {
-                ...current[worldId],
-                ducks: mergeDuckList(current[worldId].ducks, [duck]),
+              [SINGLE_WORLD_ID]: {
+                ...current[SINGLE_WORLD_ID],
+                ducks: mergeDuckList(current[SINGLE_WORLD_ID].ducks, [duck]),
               },
             }))
           }
@@ -1704,7 +1530,7 @@ function App() {
   const addDuck = () => {
     if (ducks.length >= MAX_DUCKS) return
     if (totalDrawPoints < 8) {
-      setDrawError('Draw your duck first, add a few strokes to release it.')
+      setDrawError('Draw your doodle first, add a few strokes to release it.')
       return
     }
 
@@ -1727,7 +1553,7 @@ function App() {
     const saveDrawingToSupabase = async () => {
       const fullPayload = {
         id: duck.id,
-        world_id: selectedWorldId,
+        world_id: SINGLE_WORLD_ID,
         name: duck.name,
         art: duck.art,
         animation_frames: duck.animationFrames,
@@ -1793,142 +1619,49 @@ function App() {
   }
 
   const isPondScreen = screen === 'pond'
-  const showHeroHeader = screen === 'gallery'
 
   return (
     <div className="app-shell">
-      {showHeroHeader ? (
-      <header className="hero-header">
-        <div>
-          <p className="eyebrow">The Public Doodle</p>
-          <h1>{activeWorld.title}</h1>
-          <p className="hero-copy">
-            Build your flock.
-          </p>
+      {/* ── Persistent top nav ── */}
+      <header className="app-topnav card">
+        <div className="app-topnav-left">
+          <span className="app-logo">🎨 Public Doodle</span>
+          <span className="app-status">{serverConnected ? '🟢 Live' : '⏳ Loading...'}</span>
         </div>
-        <div className="hero-stats">
-          <div>
-            <span>Active {activeWorld.residentPlural}</span>
-            <strong>{ducks.length}</strong>
-          </div>
-          <div>
-            <span>Current Pond</span>
-            <strong>{activePond.name}</strong>
-          </div>
-          <div>
-            <span>In View</span>
-            <strong>{visiblePondDucks.length}</strong>
-          </div>
-          <div>
-            <span>World</span>
-            <strong>{activeWorld.title}</strong>
-          </div>
+        <nav className="app-nav">
+          <button
+            type="button"
+            className={isPondScreen ? 'active' : ''}
+            onClick={() => setScreen('pond')}
+          >
+            🌊 Pond
+          </button>
+          <button
+            type="button"
+            className={screen === 'draw' ? 'active' : ''}
+            onClick={() => setScreen('draw')}
+          >
+            ✏️ Draw
+          </button>
+          <button
+            type="button"
+            className={screen === 'gallery' ? 'active' : ''}
+            onClick={() => setScreen('gallery')}
+          >
+            🖼️ Gallery
+          </button>
+        </nav>
+        <div className="app-topnav-right">
+          <span className="app-count">{ducks.length} {activeWorld.residentPlural}</span>
         </div>
       </header>
-      ) : null}
 
-      {screen !== 'home' && !isPondScreen ? (
-      <section className="view-switch card">
-        <button
-          type="button"
-          onClick={() => setScreen('home')}
-        >
-          Worlds
-        </button>
-        <button
-          type="button"
-          onClick={() => setScreen('pond')}
-        >
-          Visit World
-        </button>
-        <button
-          type="button"
-          className={screen === 'gallery' ? 'active' : ''}
-          onClick={() => setScreen('gallery')}
-        >
-          Gallery
-        </button>
-        <button
-          type="button"
-          className={screen === 'draw' ? 'active' : ''}
-          onClick={() => setScreen('draw')}
-        >
-          {activeWorld.drawLabel}
-        </button>
-      </section>
-      ) : null}
-
-      {screen === 'home' ? (
-        <main className="world-select-layout card">
-          <section className="world-select-head">
-            <h1>The Public Doodle</h1>
-            <p className="meta">A global doodle game where you can see drawings from people around the world and submit your own.</p>
-            <h2>Choose a World</h2>
-            <p className="meta">Each world uses the same tools with a different drawing theme.</p>
-            <p className="meta">Community: {serverConnected ? 'Connected, drawings are shared' : 'Loading community drawings...'}</p>
-          </section>
-          <section className="world-grid">
-            {WORLD_IDS.map((worldId) => {
-              const world = WORLD_CONFIGS[worldId]
-              const residents = worldStates[worldId].ducks.length
-              return (
-                <button
-                  key={worldId}
-                  type="button"
-                  className={`world-card ${selectedWorldId === worldId ? 'active' : ''}`}
-                  onClick={() => chooseWorld(worldId)}
-                >
-                  <h3>{world.title}</h3>
-                  <p className="meta">{world.drawLabel}</p>
-                  <p className="meta">{world.galleryLabel}</p>
-                  <p className="meta strong">{residents} {world.residentPlural}</p>
-                </button>
-              )
-            })}
-          </section>
-        </main>
-      ) : screen === 'pond' ? (
+      {/* ── Pond screen ── */}
+      {isPondScreen ? (
         <>
           <section className="pond-unified-toolbar card">
             <div className="pond-toolbar-main">
               <div className="pond-toolbar-left">
-                <div className="pond-unified-top">
-                  <div className="pond-top-left">
-                    <div className="view-switch pond-inline-switch">
-                      <button
-                        type="button"
-                        onClick={() => setScreen('home')}
-                      >
-                        Worlds
-                      </button>
-                      <button
-                        type="button"
-                        className="active"
-                        onClick={() => setScreen('pond')}
-                      >
-                        Visit World
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setScreen('gallery')}
-                      >
-                        Gallery
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setScreen('draw')}
-                      >
-                        {activeWorld.drawLabel}
-                      </button>
-                    </div>
-
-                    <div className="pond-world-summary">
-                      <h2>{activeWorld.title}</h2>
-                      <p className="meta">Residents: {pondDucks.length} | In view: {visiblePondDucks.length} | Total: {ducks.length}</p>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="pond-unified-controls">
                   <div>
                     <div className="view-modes pond-toolbar-modes">
@@ -1960,7 +1693,7 @@ function App() {
                   </div>
 
                   <label>
-                    Residents in View: {maxDucksInView}
+                    In View: {maxDucksInView}
                     <input
                       type="range"
                       min={6}
@@ -1972,7 +1705,7 @@ function App() {
                   </label>
 
                   <label>
-                    Character Size: {duckSizePx}px
+                    Size: {duckSizePx}px
                     <input
                       type="range"
                       min={34}
@@ -2010,7 +1743,7 @@ function App() {
             <section className={`pond card ${pondThemeClass} pond-main-focus`}>
               <div className="pond-title">
                 <h3>{activePond.name}</h3>
-                <span>{pondDucks.length} {activeWorld.residentPlural.toLowerCase()} currently here</span>
+                <span>{pondDucks.length} doodles here</span>
               </div>
               <div className="pond-grid" />
 
@@ -2054,14 +1787,13 @@ function App() {
                 )
               })}
             </section>
-
           </main>
 
           {selectedDuck ? (
             <div className="duck-modal-backdrop" onClick={() => setSelectedDuckId(null)}>
               <section className="duck-modal card" onClick={(event) => event.stopPropagation()}>
                 <div className="duck-modal-head">
-                  <h2>{activeWorld.residentSingular} Profile</h2>
+                  <h2>Doodle Profile</h2>
                   <button type="button" className="duck-modal-close" onClick={() => setSelectedDuckId(null)}>
                     Close
                   </button>
@@ -2071,31 +1803,17 @@ function App() {
               </section>
             </div>
           ) : null}
-
         </>
+
+      /* ── Gallery screen ── */
       ) : screen === 'gallery' ? (
         <main className="gallery-layout card">
           <section className="gallery-toolbar">
             <div>
-              <h2>{galleryWorldFilter === 'all' ? 'All Worlds Gallery' : galleryWorld?.galleryLabel}</h2>
-              <p className="meta">
-                {galleryWorldFilter === 'all'
-                  ? 'Every drawing from every world in one place.'
-                  : `Every ${galleryWorld?.residentSingular.toLowerCase()} your world has created, all in one place.`}
-              </p>
+              <h2>🖼️ Doodle Gallery</h2>
+              <p className="meta">Every doodle submitted to the public pond.</p>
             </div>
             <div className="view-modes gallery-modes">
-              <select
-                value={galleryWorldFilter}
-                onChange={(event) => setGalleryWorldFilter(event.target.value as GalleryWorldFilter)}
-                aria-label="Filter gallery by world"
-              >
-                <option value="all">All Worlds</option>
-                <option value="duck">Duck World</option>
-                <option value="stickman">Stickman World</option>
-                <option value="animal">Animal World</option>
-                <option value="random">Random World</option>
-              </select>
               <button
                 type="button"
                 className={galleryViewMode === 'newest' ? 'active' : ''}
@@ -2124,113 +1842,186 @@ function App() {
           </section>
 
           <section className="gallery-grid">
-            {galleryDucks.map(({ duck, worldId }) => {
-              const worldTitle = WORLD_CONFIGS[worldId].title
-              return (
-                <button
-                  key={duck.id}
-                  type="button"
-                  className="gallery-card"
-                  onClick={() => registerDuckClick(duck.id, worldId)}
-                  title={`${duck.name} | clicks ${duck.clickCount}`}
-                >
-                  <div className="gallery-art-wrap" style={{ borderColor: SINGLE_POND.color }}>
-                    <svg className="duck-art" viewBox="0 0 100 100" aria-hidden="true">
-                      {duck.art.map((stroke, index) => renderStroke(stroke, `${duck.id}-gallery-${index}`, 0.95))}
-                    </svg>
-                  </div>
-                  <p className="duck-name">{duck.name}</p>
-                  <p className="meta">{worldTitle}</p>
-                  <p className="meta">Clicks: {duck.clickCount}</p>
-                </button>
-              )
-            })}
+            {galleryDucks.map(({ duck }) => (
+              <button
+                key={duck.id}
+                type="button"
+                className="gallery-card"
+                onClick={() => registerDuckClick(duck.id, SINGLE_WORLD_ID)}
+                title={`${duck.name} | clicks ${duck.clickCount}`}
+              >
+                <div className="gallery-art-wrap" style={{ borderColor: SINGLE_POND.color }}>
+                  <svg className="duck-art" viewBox="0 0 100 100" aria-hidden="true">
+                    {duck.art.map((stroke, index) => renderStroke(stroke, `${duck.id}-gallery-${index}`, 0.95))}
+                  </svg>
+                </div>
+                <p className="duck-name">{duck.name}</p>
+                <p className="meta">Clicks: {duck.clickCount}</p>
+              </button>
+            ))}
           </section>
         </main>
+
+      /* ── Draw screen (redesigned) ── */
       ) : (
         <main className="draw-layout card">
-          <section className="draw-topbar">
-            <div>
-              <h2>{activeWorld.drawLabel}</h2>
-              <p className="meta">Draw one frame for a still {activeWorld.residentSingular.toLowerCase()}, or up to 5 frames to animate it.</p>
-            </div>
-            <div className="draw-tools">
-              <button
-                type="button"
-                className={tool === 'pencil' ? 'active' : ''}
-                onClick={() => setTool('pencil')}
-              >
-                Pencil
-              </button>
-              <button
-                type="button"
-                className={tool === 'fill' ? 'active' : ''}
-                onClick={() => setTool('fill')}
-              >
-                Fill Bucket
-              </button>
-              <button
-                type="button"
-                className={tool === 'eraser' ? 'active' : ''}
-                onClick={() => setTool('eraser')}
-              >
-                Eraser
-              </button>
-            </div>
-          </section>
-
           <section className="draw-main">
+            {/* Canvas column */}
             <div className="draw-board-panel">
               <div className="draw-canvas-wrap">
-              <svg
-                ref={drawSurfaceRef}
-                className="draw-surface full"
-                viewBox="0 0 100 100"
-                onPointerDown={startStroke}
-                onPointerMove={extendStroke}
-                onPointerUp={stopStroke}
-                onPointerLeave={stopStroke}
-              >
-                {onionSkinEnabled && previousFrameArt.length > 0 ? (
-                  <g className="onion-skin-layer">
-                    {previousFrameArt.map((stroke, index) =>
-                      renderStroke(stroke, `onion-${index}`, 1),
-                    )}
-                  </g>
-                ) : null}
-                {draftArt.map((stroke, index) => renderStroke(stroke, `draft-${index}`, 1))}
-              </svg>
+                <svg
+                  ref={drawSurfaceRef}
+                  className="draw-surface full"
+                  viewBox="0 0 100 100"
+                  onPointerDown={startStroke}
+                  onPointerMove={extendStroke}
+                  onPointerUp={stopStroke}
+                  onPointerLeave={stopStroke}
+                >
+                  {onionSkinEnabled && previousFrameArt.length > 0 ? (
+                    <g className="onion-skin-layer">
+                      {previousFrameArt.map((stroke, index) =>
+                        renderStroke(stroke, `onion-${index}`, 1),
+                      )}
+                    </g>
+                  ) : null}
+                  {draftArt.map((stroke, index) => renderStroke(stroke, `draft-${index}`, 1))}
+                </svg>
               </div>
             </div>
 
+            {/* Controls column */}
             <section className="draw-controls">
-              <div className="draw-quick-actions">
-                <button type="button" onClick={undoStroke} disabled={draftArt.length === 0}>
-                  Undo
-                </button>
-                <button type="button" onClick={redoStroke} disabled={redoArt.length === 0}>
-                  Redo
-                </button>
-                <button type="button" className="ghost" onClick={clearSketch}>
-                  Clear
-                </button>
-                <button type="button" className="ghost" onClick={startOverSketch}>
-                  Start Over
-                </button>
+
+              {/* Tools */}
+              <div className="draw-section">
+                <p className="draw-section-label">🖊 Tools</p>
+                <div className="draw-tool-buttons">
+                  <button
+                    type="button"
+                    className={`draw-tool-btn ${tool === 'pencil' ? 'active' : ''}`}
+                    onClick={() => setTool('pencil')}
+                    title="Pencil"
+                  >
+                    ✏️ Pencil
+                  </button>
+                  <button
+                    type="button"
+                    className={`draw-tool-btn ${tool === 'fill' ? 'active' : ''}`}
+                    onClick={() => setTool('fill')}
+                    title="Fill Bucket"
+                  >
+                    🪣 Fill
+                  </button>
+                  <button
+                    type="button"
+                    className={`draw-tool-btn ${tool === 'eraser' ? 'active' : ''}`}
+                    onClick={() => setTool('eraser')}
+                    title="Eraser"
+                  >
+                    🧹 Eraser
+                  </button>
+                </div>
               </div>
-              <section className="draw-frames">
+
+              {/* Color */}
+              <div className="draw-section">
+                <p className="draw-section-label">🎨 Color</p>
+                <div className="draw-color-row">
+                  <input
+                    type="color"
+                    className="draw-color-picker"
+                    value={brushColor}
+                    onChange={(event) => setBrushColor(event.target.value)}
+                    title="Pick a color"
+                  />
+                  <div className="draw-palette">
+                    {['#000000','#ffffff','#ff3b68','#ff8c42','#ffd84d','#4caf50','#00c8e6','#2979ff','#9c27b0','#795548','#607d8b','#f06292'].map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        className={`palette-swatch ${brushColor === color ? 'active' : ''}`}
+                        style={{ background: color }}
+                        onClick={() => setBrushColor(color)}
+                        title={color}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Brush size */}
+              <div className="draw-section">
+                <p className="draw-section-label">📏 {tool === 'eraser' ? 'Eraser Size' : 'Brush Size'}: {brushSize}</p>
+                <div className="draw-size-row">
+                  <input
+                    type="range"
+                    min={1}
+                    max={24}
+                    step={1}
+                    value={brushSize}
+                    onChange={(event) => setBrushSize(Number(event.target.value))}
+                  />
+                  <span
+                    className="brush-preview"
+                    style={{
+                      width: `${Math.max(4, brushSize * 1.8)}px`,
+                      height: `${Math.max(4, brushSize * 1.8)}px`,
+                      background: rainbowPencil ? 'conic-gradient(red, orange, yellow, green, blue, violet, red)' : brushColor,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Special options */}
+              <div className="draw-section draw-section-row">
+                <label className="draw-toggle">
+                  <input
+                    type="checkbox"
+                    checked={rainbowPencil}
+                    onChange={(event) => setRainbowPencil(event.target.checked)}
+                    disabled={tool !== 'pencil'}
+                  />
+                  🌈 Rainbow
+                </label>
+                <label className="draw-toggle">
+                  <input
+                    type="checkbox"
+                    checked={onionSkinEnabled}
+                    onChange={(event) => setOnionSkinEnabled(event.target.checked)}
+                    disabled={activeFrameIndex === 0}
+                  />
+                  👻 Onion Skin
+                </label>
+              </div>
+
+              {/* History actions */}
+              <div className="draw-section">
+                <p className="draw-section-label">↩ History</p>
+                <div className="draw-history-buttons">
+                  <button type="button" className="draw-hist-btn" onClick={undoStroke} disabled={draftArt.length === 0}>
+                    ↩ Undo
+                  </button>
+                  <button type="button" className="draw-hist-btn" onClick={redoStroke} disabled={redoArt.length === 0}>
+                    ↪ Redo
+                  </button>
+                  <button type="button" className="draw-hist-btn ghost" onClick={clearSketch}>
+                    🗑 Clear
+                  </button>
+                  <button type="button" className="draw-hist-btn ghost" onClick={startOverSketch}>
+                    🔄 Reset
+                  </button>
+                </div>
+              </div>
+
+              {/* Frames */}
+              <div className="draw-section">
                 <div className="draw-frames-head">
-                  <p className="meta strong">Frames {draftFrames.length}/{MAX_ANIMATION_FRAMES}</p>
+                  <p className="draw-section-label">🎞 Frames ({draftFrames.length}/{MAX_ANIMATION_FRAMES})</p>
                   <div className="draw-frame-actions">
-                    <button type="button" onClick={addFrame} disabled={draftFrames.length >= MAX_ANIMATION_FRAMES}>
-                      Add
-                    </button>
-                    <button type="button" onClick={duplicateFrame} disabled={draftFrames.length >= MAX_ANIMATION_FRAMES}>
-                      Duplicate
-                    </button>
-                    <button type="button" className="ghost" onClick={removeActiveFrame} disabled={draftFrames.length <= 1}>
-                      Delete
-                    </button>
+                    <button type="button" onClick={addFrame} disabled={draftFrames.length >= MAX_ANIMATION_FRAMES}>+</button>
+                    <button type="button" onClick={duplicateFrame} disabled={draftFrames.length >= MAX_ANIMATION_FRAMES}>⧉</button>
+                    <button type="button" className="ghost" onClick={removeActiveFrame} disabled={draftFrames.length <= 1}>✕</button>
                   </div>
                 </div>
                 <div className="frame-strip" role="tablist" aria-label="Animation frames">
@@ -2253,10 +2044,8 @@ function App() {
                     </button>
                   ))}
                 </div>
-              </section>
-              <div className="draw-adjustments">
-                <label>
-                  Animation Speed: {draftAnimationFps} fps
+                <label style={{ marginTop: '0.35rem' }}>
+                  Speed: {draftAnimationFps} fps
                   <input
                     type="range"
                     min={1}
@@ -2266,100 +2055,63 @@ function App() {
                     onChange={(event) => setDraftAnimationFps(Number(event.target.value))}
                   />
                 </label>
-                <label>
-                  Color
-                  <input
-                    type="color"
-                    value={brushColor}
-                    onChange={(event) => setBrushColor(event.target.value)}
-                  />
-                </label>
-                <label>
-                  {tool === 'eraser' ? 'Eraser Size' : 'Brush Size'}: {brushSize}
-                  <input
-                    type="range"
-                    min={1}
-                    max={24}
-                    step={1}
-                    value={brushSize}
-                    onChange={(event) => setBrushSize(Number(event.target.value))}
-                  />
-                </label>
-                <label>
-                  Rainbow Pencil
-                  <input
-                    type="checkbox"
-                    checked={rainbowPencil}
-                    onChange={(event) => setRainbowPencil(event.target.checked)}
-                    disabled={tool !== 'pencil'}
-                  />
-                </label>
-                <label>
-                  Onion Skin
-                  <input
-                    type="checkbox"
-                    checked={onionSkinEnabled}
-                    onChange={(event) => setOnionSkinEnabled(event.target.checked)}
-                    disabled={activeFrameIndex === 0}
-                  />
-                </label>
-                <p className="meta">Onion Skin shows the previous frame while you draw.</p>
               </div>
-              <div className="draw-preview card">
+
+              {/* Preview */}
+              <div className="draw-section draw-preview">
                 <div className="draw-preview-head">
-                  <p className="meta strong">Preview</p>
+                  <p className="draw-section-label">▶ Preview</p>
                   <button
                     type="button"
                     className={previewPlaying ? 'active' : ''}
                     onClick={() => setPreviewPlaying((value) => !value)}
                     disabled={draftFrames.length <= 1}
                   >
-                    {previewPlaying ? 'Pause' : 'Play'}
+                    {previewPlaying ? '⏸ Pause' : '▶ Play'}
                   </button>
                 </div>
                 <svg className="draw-preview-art" viewBox="0 0 100 100" aria-hidden="true">
                   {previewFrameArt.map((stroke, index) => renderStroke(stroke, `preview-${index}`, 1))}
                 </svg>
-                <p className="meta">Frame {previewFrameIndex + 1} of {draftFrames.length}</p>
               </div>
-              <label>
-                Name
-                <input
-                  value={newName}
-                  onChange={(event) => setNewName(event.target.value)}
-                  placeholder="Type a duck name"
-                />
-              </label>
-              <label>
-                Click Sound
-                <select
-                  value={selectedSound}
-                  onChange={(event) => {
-                    const val = event.target.value as SoundOption
-                    setSelectedSound(val)
-                    const soundFile = resolveSoundFile(val, selectedWorldId)
-                    const audio = new Audio(soundFile)
-                    audio.currentTime = 0
-                    audio.play().catch(() => {})
-                  }}
-                >
-                  {SOUND_LIST.map((sound) => (
-                    <option key={sound.id} value={sound.id}>
-                      {sound.name} {sound.id === 'default' ? `(${SOUND_LIST.find(s => s.file === getDefaultSoundForWorld(selectedWorldId))?.name || 'Default'})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="button-row draw-actions">
-                <button type="button" onClick={addDuck}>
-                  Release {activeWorld.residentSingular}
+
+              {/* Submit */}
+              <div className="draw-section draw-submit-section">
+                <label>
+                  Name your doodle
+                  <input
+                    value={newName}
+                    onChange={(event) => setNewName(event.target.value)}
+                    placeholder="e.g. Puddle the Duck"
+                  />
+                </label>
+                <label>
+                  Click Sound
+                  <select
+                    value={selectedSound}
+                    onChange={(event) => {
+                      const val = event.target.value as SoundOption
+                      setSelectedSound(val)
+                      const soundFile = resolveSoundFile(val, selectedWorldId)
+                      const audio = new Audio(soundFile)
+                      audio.currentTime = 0
+                      audio.play().catch(() => {})
+                    }}
+                  >
+                    {SOUND_LIST.map((sound) => (
+                      <option key={sound.id} value={sound.id}>
+                        {sound.name}{sound.id === 'default' ? ` (${SOUND_LIST.find(s => s.file === getDefaultSoundForWorld(selectedWorldId))?.name ?? 'Default'})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button type="button" className="draw-release-btn" onClick={addDuck}>
+                  🎉 Release Doodle!
                 </button>
-                <button type="button" className="ghost" onClick={() => setScreen('pond')}>
-                  Back to World
-                </button>
+                {drawError ? <p className="draw-error">{drawError}</p> : null}
+                <p className="meta">Capacity {ducks.length}/{MAX_DUCKS}</p>
               </div>
-              {drawError ? <p className="draw-error">{drawError}</p> : null}
-              <p className="meta">Capacity {ducks.length}/{MAX_DUCKS}</p>
+
             </section>
           </section>
         </main>
