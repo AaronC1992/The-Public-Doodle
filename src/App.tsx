@@ -297,6 +297,28 @@ const DEFAULT_ANIMATION_FPS = 6
 const DRAW_MIN = 0
 const DRAW_MAX = 100
 
+function safeSetStorageItem(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value)
+    return true
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      console.warn(`localStorage quota exceeded for key "${key}"`)
+    } else {
+      console.warn(`Failed to persist localStorage key "${key}"`, error)
+    }
+    return false
+  }
+}
+
+function safeRemoveStorageItem(key: string) {
+  try {
+    localStorage.removeItem(key)
+  } catch (error) {
+    console.warn(`Failed to remove localStorage key "${key}"`, error)
+  }
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))
 }
@@ -420,11 +442,11 @@ function readPendingDraft(): PendingDraft | null {
 }
 
 function writePendingDraft(draft: PendingDraft) {
-  localStorage.setItem(PENDING_DRAFT_KEY, JSON.stringify(draft))
+  safeSetStorageItem(PENDING_DRAFT_KEY, JSON.stringify(draft))
 }
 
 function clearPendingDraft() {
-  localStorage.removeItem(PENDING_DRAFT_KEY)
+  safeRemoveStorageItem(PENDING_DRAFT_KEY)
 }
 
 type PersistedState = {
@@ -597,10 +619,15 @@ const INITIAL_PERSISTED_STORE = readPersistedStore()
 
 // Anonymous user key persisted in localStorage so one user gets one like per drawing
 function getOrCreateUserKey(): string {
-  const stored = localStorage.getItem('tpd-user-key')
-  if (stored) return stored
+  try {
+    const stored = localStorage.getItem('tpd-user-key')
+    if (stored) return stored
+  } catch (error) {
+    console.warn('Failed to read localStorage user key', error)
+  }
+
   const key = randomId() + randomId()
-  localStorage.setItem('tpd-user-key', key)
+  safeSetStorageItem('tpd-user-key', key)
   return key
 }
 
@@ -862,7 +889,9 @@ function App() {
       selectedWorldId: SINGLE_WORLD_ID,
       worlds: worldStates,
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
+    if (!safeSetStorageItem(STORAGE_KEY, JSON.stringify(snapshot))) {
+      safeRemoveStorageItem(STORAGE_KEY)
+    }
   }, [worldStates])
 
   // No need to reset draft when world changes — single world only
